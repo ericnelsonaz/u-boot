@@ -235,7 +235,7 @@ static int mmdc_do_dqs_calibration
 
 	// Set DQS pullups
 	for (pad=0; pad < ARRAY_SIZE(mx6q_sdqs_pads); pad++)
-		writel((readl(pads[pad]) & ~0xf000) | 0x7000,pads[pad]);
+		clrsetbits_le32(pads[pad], 0xf000, 0x7000);
 
 	/*
 	 * per the ref manual, issue one refresh cycle mdscr[CMD]= 0x2,
