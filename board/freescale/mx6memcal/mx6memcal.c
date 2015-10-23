@@ -198,7 +198,8 @@ static int mmdc_do_dqs_calibration
 	writel(0x00000001, &mmdc0->mpwlgcr);
 
 	/* Upon completion of this process the MMDC de-asserts the MPWLGCR[HW_WL_EN] */
-	while (readl(&mmdc0->mpwlgcr) & 0x00000001);
+	while (readl(&mmdc0->mpwlgcr) & 0x00000001)
+		;
 
 	/* check for any errors: check both PHYs for x64 configuration, if x32, check only PHY0 */
 	if ((readl(&mmdc0->mpwlgcr) & 0x00000F00) ||
@@ -244,7 +245,8 @@ static int mmdc_do_dqs_calibration
 		writel(0x00008028, &mmdc0->mdscr);
 
 	/* poll to make sure the con_ack bit was asserted */
-	while (!(readl(&mmdc0->mdscr) & 0x00004000)) ;
+	while (!(readl(&mmdc0->mdscr) & 0x00004000))
+		;
 
 	/*
 	 * check mdmisc register CALIB_PER_CS to see which CS calibration is
@@ -395,7 +397,8 @@ static int mmdc_do_dqs_calibration
 	 * mprddlhwctl[HW_RD_DL_EN] = 0
 	 * Also, ensure that no error bits were set
 	 */
-	while (readl(&mmdc0->mprddlhwctl) & 0x00000010) ;
+	while (readl(&mmdc0->mprddlhwctl) & 0x00000010)
+		;
 
 	/* check both PHYs for x64 configuration, if x32, check only PHY0 */
 	if (sysinfo->dsize == 0x2) {
@@ -435,7 +438,8 @@ static int mmdc_do_dqs_calibration
 	 * mpwrdlhwctl[HW_WR_DL_EN] = 0
 	 * Also, ensure that no error bits were set
 	 */
-	while (readl(&mmdc0->mpwrdlhwctl) & 0x00000010) ;
+	while (readl(&mmdc0->mpwrdlhwctl) & 0x00000010)
+		;
 
 	/* check both PHYs for x64 configuration, if x32, check only PHY0 */
 	if (sysinfo->dsize == 0x2) {
