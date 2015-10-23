@@ -42,7 +42,7 @@ static struct mxc_ccm_reg * const imx_ccm = (struct mxc_ccm_reg *)CCM_BASE_ADDR;
 /*
  * set DQS gating delays based on Read DQS Gating HW Status (mpdghwst) registers
  */
-static void modify_dg_result(u32 volatile *reg_st0, u32 volatile *reg_st1, u32 volatile *reg_ctrl)
+static void set_read_dqs_delay(u32 volatile *reg_st0, u32 volatile *reg_st1, u32 volatile *reg_ctrl)
 {
 	u32 dg_tmp_val, dg_dl_abs_offset, dg_hc_del, val_ctrl;
 	u32 mask;
@@ -356,21 +356,21 @@ static int mmdc_do_dqs_calibration
 	 * DQS gating absolute offset should be modified from reflecting
 	 * (HW_DG_LOWx + HW_DG_UPx)/2 to reflecting (HW_DG_UPx - 0x80)
 	 */
-	modify_dg_result(&mmdc0->mpdghwst0,
-			&mmdc0->mpdghwst1,
-			&mmdc0->mpdgctrl0);
+	set_read_dqs_delay(&mmdc0->mpdghwst0,
+                           &mmdc0->mpdghwst1,
+                           &mmdc0->mpdgctrl0);
 
-	modify_dg_result(&mmdc0->mpdghwst2,
-			&mmdc0->mpdghwst3,
-			&mmdc0->mpdgctrl1);
+	set_read_dqs_delay(&mmdc0->mpdghwst2,
+                           &mmdc0->mpdghwst3,
+                           &mmdc0->mpdgctrl1);
 
 	if (sysinfo->dsize == 0x2) {
-		modify_dg_result(&mmdc1->mpdghwst0,
-				&mmdc1->mpdghwst1,
-				&mmdc1->mpdgctrl0);
-		modify_dg_result(&mmdc1->mpdghwst2,
-				&mmdc1->mpdghwst3,
-				&mmdc1->mpdgctrl1);
+		set_read_dqs_delay(&mmdc1->mpdghwst0,
+                                   &mmdc1->mpdghwst1,
+                                   &mmdc1->mpdgctrl0);
+		set_read_dqs_delay(&mmdc1->mpdghwst2,
+                                   &mmdc1->mpdghwst3,
+                                   &mmdc1->mpdgctrl1);
 	}
 
 	/*
