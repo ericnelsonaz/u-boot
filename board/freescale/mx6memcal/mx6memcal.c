@@ -309,7 +309,7 @@ static int mmdc_do_dqs_calibration
 	while (!(readl(&mmdc0->mpdgctrl0) & (1<<30)))
 		;
 
-	/* Set bit 28 to start automatic read DQS gating calibration */
+	/* Set bit 28 (HW_DG_EN) to start automatic read DQS gating calibration */
 	clrsetbits_le32(&mmdc0->mpdgctrl0, 0, 1 << 28);
 
 	/*
@@ -341,6 +341,9 @@ static int mmdc_do_dqs_calibration
                 printf("%s: read calibration error count %d, bus size %d\n", __func__, errorcount, sysinfo->dsize);
 		return errorcount;
 	}
+
+	/* now disable mpdgctrl0[DG_CMP_CYC] */
+	clrsetbits_le32(&mmdc0->mpdgctrl0, 1 << 30, 0);
 
 	/*
 	 * DQS gating absolute offset should be modified from reflecting
