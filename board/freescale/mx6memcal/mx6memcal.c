@@ -340,8 +340,11 @@ static int mmdc_do_dqs_calibration
 			errorcount++;
 		}
 	} else {
-		if (readl(&mmdc0->mpdgctrl0) & 0x00001000)
+		if (readl(&mmdc0->mpdgctrl0) & 0x00001000) {
+			printf("read calibration err 0x%08x\n",
+                               readl(&mmdc0->mpdgctrl0));
 			errorcount++;
+		}
 	}
 
 	if (errorcount) {
