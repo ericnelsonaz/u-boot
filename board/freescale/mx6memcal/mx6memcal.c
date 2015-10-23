@@ -135,7 +135,7 @@ static int mmdc_do_dqs_calibration
 	(struct mx6_ddr_sysinfo const *sysinfo,
 	 struct mx6_mmdc_calibration *calib)
 {
-	u32 esdmisc_val, mask;
+	u32 mask;
 	int write_cal_err = 0;
 	int cs1_enable_initial;
 	int PDDWord = 0x00FFFF00;
@@ -161,12 +161,9 @@ static int mmdc_do_dqs_calibration
 	/* disable Adopt power down timer */
 	clrsetbits_le32(&mmdc0->mapsr, 0, 1);
 
-	esdmisc_val = readl(&mmdc0->mdmisc);
-
 	/* set RALAT and WALAT to max */
 	clrsetbits_le32(&mmdc0->mdmisc, 0,
-			(1 << 6) | (1 << 7) | (1 << 8) | (1 << 16) | (1 << 17));
-
+			(7 << 6) | (3 << 16));
 	ddr_mr1 = is_cpu_type(MXC_CPU_MX6Q) ? 0x42 : 0x4;
 
 	/*
@@ -462,8 +459,9 @@ static int mmdc_do_dqs_calibration
 	/* enable auto power down timer */
 	clrsetbits_le32(&mmdc0->mapsr, 1, 0);
 
-	/* restore mdmisc value (RALAT, WALAT) */
-	writel(esdmisc_val, &mmdc1->mdmisc);
+	clrsetbits_le32(&mmdc0->mdmisc,
+			(3 << 16) | (7 << 6),
+			(sysinfo->walat << 16) | (sysinfo->ralat << 6));
 
 	/* clear DQS pull ups */
 	for (pad=0; pad < ARRAY_SIZE(mx6q_sdqs_pads); pad++)
@@ -641,7 +639,7 @@ static struct mx6_ddr_sysinfo const sysinfo = {
 #else
 	.rtt_nom = 1 /*DDR3_RTT_60_OHM*/,	/* RTT_Nom = RZQ/4 */
 #endif
-	.walat = 1,	/* Write additional latency */
+	.walat = 0,	/* Write additional latency */
 	.ralat = 5,	/* Read additional latency */
 	.mif3_mode = 3,	/* Command prediction working mode */
 	.bi_on = 1,	/* Bank interleaving enabled */
