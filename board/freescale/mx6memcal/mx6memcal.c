@@ -202,11 +202,13 @@ static u32 volatile *mx6dl_sdqs_pads[] = {
 	&mx6dl_ddrmux->dram_sdqs7,
 };
 
-static int mmdc_do_dqs_calibration(void)
+static int mmdc_do_dqs_calibration
+	(struct mx6_ddr_sysinfo const *sysinfo,
+	 struct mx6_ddr3_cfg const *ddrtype,
+	 struct mx6_mmdc_calibration *calib)
 {
 	u32 esdmisc_val, v;
 	int write_cal_err = 0;
-	int temp_ref;
 	int cs0_enable_initial;
 	int cs1_enable_initial;
 	int PDDWord = 0x00FFFF00;
@@ -218,14 +220,13 @@ static int mmdc_do_dqs_calibration(void)
 	u32 pad;
 
 	/* check to see which chip selects are enabled */
-	cs0_enable_initial = (readl(&mmdc0->mdctl) & 0x80000000) >> 31;
-	cs1_enable_initial = (readl(&mmdc0->mdctl) & 0x40000000) >> 30;
+	cs0_enable_initial = 1;
+	cs1_enable_initial = (sysinfo->ncs == 2);
 
 	/*
 	 * disable auto refresh
 	 * before proceeding with calibration
 	 */
-	temp_ref = readl(&mmdc0->mdref);
 	writel(0x0000C000, &mmdc0->mdref);
 
 	/* disable DDR logic power down timer */
@@ -507,8 +508,10 @@ static int mmdc_do_dqs_calibration(void)
 
 	writel(v, &mmdc0->mdctl);
 
-	/* re-enable to auto refresh */
-	writel(temp_ref, &mmdc0->mdref);
+	/* enable to auto refresh */
+	writel((0 << 14) | /* REF_SEL: Periodic refresh cycle: 64kHz */
+	       (3 << 11)   /* REFR: Refresh Rate - 4 refreshes */,
+	       &mmdc0->mdref);
 
 	/* clear the mdscr (including the con_req bit) */
 	writel(0x0, &mmdc0->mdscr); /* CS0 */
@@ -757,6 +760,7 @@ static void gpr_init(void)
 void board_init_f(ulong dummy)
 {
 	int errs;
+	struct mx6_mmdc_calibration calibration;
 
 	memset((void *)gd, 0, sizeof(struct global_data));
 
@@ -783,7 +787,7 @@ void board_init_f(ulong dummy)
 				  &mx6sdl_grp_ioregs);
 	}
 	mx6_dram_cfg(&sysinfo, NULL, &ddrtype);
-	errs = mmdc_do_dqs_calibration();
+	errs = mmdc_do_dqs_calibration(&sysinfo, &ddrtype, &calibration);
 	if (errs)
 		printf("completed with %d errors\n", errs);
 	else
