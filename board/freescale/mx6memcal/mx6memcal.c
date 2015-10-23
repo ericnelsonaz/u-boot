@@ -133,7 +133,6 @@ static u32 volatile *mx6dl_sdqs_pads[] = {
 
 static int mmdc_do_dqs_calibration
 	(struct mx6_ddr_sysinfo const *sysinfo,
-	 struct mx6_ddr3_cfg const *ddrtype,
 	 struct mx6_mmdc_calibration *calib)
 {
 	u32 esdmisc_val, mask;
@@ -486,31 +485,18 @@ static int mmdc_do_dqs_calibration
 	while (readl(&mmdc0->mdscr) & 0x00004000)
 		;
 
-	printf("mmdc0->mpdgctrl0\t= 0x%08X\n", readl(&mmdc0->mpdgctrl0));
-	printf("mmdc0->mpdgctrl1\t= 0x%08X\n", readl(&mmdc0->mpdgctrl1));
-	printf("mmdc1->mpdgctrl0\t= 0x%08X\n", readl(&mmdc1->mpdgctrl0));
-	printf("mmdc1->mpdgctrl1\t= 0x%08X\n", readl(&mmdc1->mpdgctrl1));
-	printf("mmdc0->mprddlctl\t= 0x%08X\n", readl(&mmdc0->mprddlctl));
-	printf("mmdc1->mprddlctl\t= 0x%08X\n", readl(&mmdc1->mprddlctl));
-	printf("mmdc0->mpwrdlctl\t= 0x%08X\n", readl(&mmdc0->mpwrdlctl));
-	printf("mmdc1->mpwrdlctl\t= 0x%08X\n", readl(&mmdc1->mpwrdlctl));
-	printf("mmdc0->mpwldectrl0\t= 0x%08X\n",readl(&mmdc0->mpwldectrl0));
-	printf("mmdc0->mpwldectrl1\t= 0x%08X\n",readl(&mmdc0->mpwldectrl1));
-	printf("mmdc1->mpwldectrl0\t= 0x%08X\n",readl(&mmdc1->mpwldectrl0));
-	printf("mmdc1->mpwldectrl1\t= 0x%08X\n",readl(&mmdc1->mpwldectrl1));
-	/*
-	 * registers below are for debugging purposes
-	 * these print out the upper and lower boundaries captured during read DQS gating calibration
-	 *
-	printf("mpdghwst0 PHY0 (0x021b087c) = 0x%08X\n", readl(&mmdc0->mpdghwst0));
-	printf("mpdghwst1 PHY0 (0x021b0880) = 0x%08X\n", readl(&mmdc0->mpdghwst1));
-	printf("mpdghwst2 PHY0 (0x021b0884) = 0x%08X\n", readl(&mmdc0->mpdghwst2));
-	printf("mpdghwst3 PHY0 (0x021b0888) = 0x%08X\n", readl(&mmdc0->mpdghwst3));
-	printf("mpdghwst0 PHY1 (0x021b487c) = 0x%08X\n", readl(&mmdc1->mpdghwst0));
-	printf("mpdghwst1 PHY1 (0x021b4880) = 0x%08X\n", readl(&mmdc1->mpdghwst1));
-	printf("mpdghwst2 PHY1 (0x021b4884) = 0x%08X\n", readl(&mmdc1->mpdghwst2));
-	printf("mpdghwst3 PHY1 (0x021b4888) = 0x%08X\n", readl(&mmdc1->mpdghwst3));
-	*/
+	calib->p0_mpwldectrl0 = readl(&mmdc0->mpwldectrl0);
+	calib->p0_mpwldectrl1 = readl(&mmdc0->mpwldectrl1);
+	calib->p1_mpwldectrl0 = readl(&mmdc1->mpwldectrl0);
+	calib->p1_mpwldectrl1 = readl(&mmdc1->mpwldectrl1);
+	calib->p0_mpdgctrl0 = readl(&mmdc0->mpdgctrl0);
+	calib->p0_mpdgctrl1 = readl(&mmdc0->mpdgctrl1);
+	calib->p1_mpdgctrl0 = readl(&mmdc1->mpdgctrl0);
+	calib->p1_mpdgctrl1 = readl(&mmdc1->mpdgctrl1);
+	calib->p0_mprddlctl = readl(&mmdc0->mprddlctl);
+	calib->p1_mprddlctl = readl(&mmdc1->mprddlctl);
+	calib->p0_mpwrdlctl = readl(&mmdc0->mpwrdlctl);
+	calib->p1_mpwrdlctl = readl(&mmdc1->mpwrdlctl);
 	return errorcount;
 }
 
@@ -742,11 +728,23 @@ void board_init_f(ulong dummy)
 				  &mx6sdl_grp_ioregs);
 	}
 	mx6_dram_cfg(&sysinfo, NULL, &ddrtype);
-	errs = mmdc_do_dqs_calibration(&sysinfo, &ddrtype, &calibration);
-	if (errs)
-		printf("completed with %d errors\n", errs);
-	else
+	errs = mmdc_do_dqs_calibration(&sysinfo, &calibration);
+	if (!errs) {
 		printf("completed successfully\n");
+		printf(".p0_mpdgctrl0\t= 0x%08X\n", calibration.p0_mpdgctrl0);
+		printf(".p0_mpdgctrl1\t= 0x%08X\n", calibration.p0_mpdgctrl1);
+		printf(".p1_mpdgctrl0\t= 0x%08X\n", calibration.p1_mpdgctrl0);
+		printf(".p1_mpdgctrl1\t= 0x%08X\n", calibration.p1_mpdgctrl1);
+		printf(".p0_mprddlctl\t= 0x%08X\n", calibration.p0_mprddlctl);
+		printf(".p1_mprddlctl\t= 0x%08X\n", calibration.p1_mprddlctl);
+		printf(".p0_mpwrdlctl\t= 0x%08X\n", calibration.p0_mpwrdlctl);
+		printf(".p1_mpwrdlctl\t= 0x%08X\n", calibration.p1_mpwrdlctl);
+		printf(".p0_mpwldectrl0\t= 0x%08X\n",calibration.p0_mpwldectrl0);
+		printf(".p0_mpwldectrl1\t= 0x%08X\n",calibration.p0_mpwldectrl1);
+		printf(".p1_mpwldectrl0\t= 0x%08X\n",calibration.p1_mpwldectrl0);
+		printf(".p1_mpwldectrl1\t= 0x%08X\n",calibration.p1_mpwldectrl1);
+	} else
+		printf("completed with %d errors\n", errs);
 
 	reset_cpu(0);
 }
