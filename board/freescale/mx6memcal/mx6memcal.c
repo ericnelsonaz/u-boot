@@ -144,7 +144,6 @@ static int mmdc_do_dqs_calibration
 	int errorcount = 0;
 	int cs0_enable;
 	int cs1_enable;
-	int data_bus_size;
 	u32 volatile *const *pads;
 	u32 pad;
 	u32 ddr_mr1;
@@ -273,9 +272,6 @@ static int mmdc_do_dqs_calibration
 	cs0_enable = (readl(&mmdc0->mdctl) & 0x80000000) >> 31;
 	cs1_enable = (readl(&mmdc0->mdctl) & 0x40000000) >> 30;
 
-	/* check to see what is the data bus size */
-	data_bus_size = (readl(&mmdc0->mdctl) & 0x30000) >> 16;
-
 	mmdc_precharge_all(cs0_enable, cs1_enable);
 
 	/* Write the pre-defined value into MPPDCMPR1 */
@@ -298,11 +294,11 @@ static int mmdc_do_dqs_calibration
 	 * Both PHYs for x64 configuration, if x32, do only PHY0
 	 */
 	writel(0x40404040, &mmdc0->mprddlctl);
-	if (data_bus_size == 0x2)
+	if (sysinfo->dsize == 0x2)
 		writel(0x40404040, &mmdc1->mprddlctl);
 
 	/* Force a measurement, for previous delay setup to take effect */
-	mmdc_force_delay_measurement(data_bus_size);
+	mmdc_force_delay_measurement(sysinfo->dsize);
 
 	/*
 	 * Read DQS Gating calibration
@@ -340,7 +336,7 @@ static int mmdc_do_dqs_calibration
 	 * (check mpdgctrl0[HW_DG_ERR])
 	 * check both PHYs for x64 configuration, if x32, check only PHY0
 	 */
-	if (data_bus_size == 0x2) {
+	if (sysinfo->dsize == 0x2) {
 		if ((readl(&mmdc0->mpdgctrl0) & 0x00001000) ||
 				(readl(&mmdc1->mpdgctrl0) & 0x00001000)) {
 			printf("read calibration err 0x%08x/0x%08x\n",
@@ -354,7 +350,7 @@ static int mmdc_do_dqs_calibration
 	}
 
 	if (errorcount) {
-                printf("%s: read calibration error count %d, bus size %d\n", __func__, errorcount, data_bus_size);
+                printf("%s: read calibration error count %d, bus size %d\n", __func__, errorcount, sysinfo->dsize);
 		return errorcount;
 	}
 
@@ -370,7 +366,7 @@ static int mmdc_do_dqs_calibration
 			&mmdc0->mpdghwst3,
 			&mmdc0->mpdgctrl1);
 
-	if (data_bus_size == 0x2) {
+	if (sysinfo->dsize == 0x2) {
 		modify_dg_result(&mmdc1->mpdghwst0,
 				&mmdc1->mpdghwst1,
 				&mmdc1->mpdgctrl0);
@@ -401,7 +397,7 @@ static int mmdc_do_dqs_calibration
 	while (readl(&mmdc0->mprddlhwctl) & 0x00000010) ;
 
 	/* check both PHYs for x64 configuration, if x32, check only PHY0 */
-	if (data_bus_size == 0x2) {
+	if (sysinfo->dsize == 0x2) {
 		if ((readl(&mmdc0->mprddlhwctl) & 0x0000000f) ||
 				(readl(&mmdc1->mprddlhwctl) & 0x0000000f)) {
 			errorcount++;
@@ -424,10 +420,10 @@ static int mmdc_do_dqs_calibration
 	 * Both PHYs for x64 configuration, if x32, do only PHY0
 	 */
 	writel(0x40404040, &mmdc0->mpwrdlctl);
-	if (data_bus_size == 0x2)
+	if (sysinfo->dsize == 0x2)
 		writel(0x40404040, &mmdc1->mpwrdlctl);
 
-	mmdc_force_delay_measurement(data_bus_size);
+	mmdc_force_delay_measurement(sysinfo->dsize);
 
 	/* Start the automatic write calibration process by asserting mpwrdlhwctl0[HW_WR_DL_EN] */
 	writel(0x00000030, &mmdc0->mpwrdlhwctl);
@@ -441,7 +437,7 @@ static int mmdc_do_dqs_calibration
 	while (readl(&mmdc0->mpwrdlhwctl) & 0x00000010) ;
 
 	/* check both PHYs for x64 configuration, if x32, check only PHY0 */
-	if (data_bus_size == 0x2) {
+	if (sysinfo->dsize == 0x2) {
 		if ((readl(&mmdc0->mpwrdlhwctl) & 0x0000000f) ||
 				(readl(&mmdc1->mpwrdlhwctl) & 0x0000000f)) {
 			errorcount++;
