@@ -84,7 +84,7 @@ static int mmdc_do_write_level_calibration(void)
 	/* check for any errors: check both PHYs for x64 configuration, if x32, check only PHY0 */
 	if ((readl(&mmdc0->mpwlgcr) & 0x00000F00) ||
 			(readl(&mmdc1->mpwlgcr) & 0x00000F00)) {
-		printf("write leveling error 0x%08x/0x%08x\n", 
+		printf("write leveling error 0x%08x/0x%08x\n",
                        readl(&mmdc0->mpwlgcr),
                        readl(&mmdc1->mpwlgcr));
 		return -1;
