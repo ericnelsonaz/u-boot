@@ -39,12 +39,17 @@ static iomux_v3_cfg_t const uart_pads[] = {
 
 static struct mxc_ccm_reg * const imx_ccm = (struct mxc_ccm_reg *)CCM_BASE_ADDR;
 
+/*
+ * set DQS gating delays based on Read DQS Gating HW Status (mpdghwst) registers
+ */
 static void modify_dg_result(u32 volatile *reg_st0, u32 volatile *reg_st1, u32 volatile *reg_ctrl)
 {
 	u32 dg_tmp_val, dg_dl_abs_offset, dg_hc_del, val_ctrl;
+	u32 mask;
 
 	/*
-	 * DQS gating absolute offset should be modified from reflecting (HW_DG_LOWx + HW_DG_UPx)/2
+	 * DQS gating absolute offset should be modified from
+	 * reflecting (HW_DG_LOWx + HW_DG_UPx)/2
 	 * to reflecting (HW_DG_UPx - 0x80)
 	 */
 
@@ -55,15 +60,17 @@ static void modify_dg_result(u32 volatile *reg_st0, u32 volatile *reg_st1, u32 v
 	dg_dl_abs_offset = dg_tmp_val & 0x7f;
 	dg_hc_del = (dg_tmp_val & 0x780) << 1;
 
-	val_ctrl |= dg_dl_abs_offset + dg_hc_del;
+	/* byte 0 values */
+	mask = dg_dl_abs_offset + dg_hc_del;
 
 	dg_tmp_val = ((readl(reg_st1) & 0x07ff0000) >> 16) - 0xc0;
 	dg_dl_abs_offset = dg_tmp_val & 0x7f;
 	dg_hc_del = (dg_tmp_val & 0x780) << 1;
 
-	val_ctrl |= (dg_dl_abs_offset + dg_hc_del) << 16;
+	/* byte 1 values */
+	mask |= (dg_dl_abs_offset + dg_hc_del) << 16;
 
-	writel(val_ctrl, reg_ctrl);
+	clrsetbits_le32(reg_ctrl, 0x0f7f0f7f, mask);
 }
 
 static void mmdc_precharge_all(int cs0_enable, int cs1_enable)
