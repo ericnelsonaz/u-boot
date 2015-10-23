@@ -37,13 +37,6 @@ static iomux_v3_cfg_t const uart_pads[] = {
 #define mx6q_ddrmux ((struct mx6dq_iomux_ddr_regs volatile *)MX6DQ_IOM_DDR_BASE)
 #define mx6dl_ddrmux ((struct mx6sdl_iomux_ddr_regs volatile *)MX6SDL_IOM_DDR_BASE)
 
-/* called from SPL board_init_f() */
-int board_early_init_f(void)
-{
-	SETUP_IOMUX_PADS(uart_pads);
-	return 0;
-}
-
 static struct mxc_ccm_reg * const imx_ccm = (struct mxc_ccm_reg *)CCM_BASE_ADDR;
 
 static void modify_dg_result(u32 volatile *reg_st0, u32 volatile *reg_st1, u32 volatile *reg_ctrl)
@@ -720,7 +713,7 @@ void board_init_f(ulong dummy)
 
 	ccgr_init();
 
-	board_early_init_f();
+	SETUP_IOMUX_PADS(uart_pads);
 
 	/* setup GP timer */
 	timer_init();
