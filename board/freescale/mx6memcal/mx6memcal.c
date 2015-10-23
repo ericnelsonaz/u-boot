@@ -230,21 +230,16 @@ static int mmdc_do_dqs_calibration
 	writel(0x0000C000, &mmdc0->mdref);
 
 	/* disable DDR logic power down timer */
-	v = readl(&mmdc0->mdpdc);
-	v &= ~0xff00;
-	writel(v, &mmdc0->mdpdc);
+	clrsetbits_le32(&mmdc0->mdpdc, 0xff00, 0);
 
 	/* disable Adopt power down timer */
-	v = readl(&mmdc0->mapsr);
-	v |= 0x1;
-	writel(v, &mmdc0->mapsr);
+	clrsetbits_le32(&mmdc0->mapsr, 0, 1);
 
 	esdmisc_val = readl(&mmdc0->mdmisc);
 
 	/* set RALAT and WALAT to max */
-	v = readl(&mmdc0->mdmisc);
-	v |= (1 << 6) | (1 << 7) | (1 << 8) | (1 << 16) | (1 << 17);
-	writel(v, &mmdc0->mdmisc);
+	clrsetbits_le32(&mmdc0->mdmisc, 0,
+			(1 << 6) | (1 << 7) | (1 << 8) | (1 << 16) | (1 << 17));
 
 	v = mmdc_do_write_level_calibration();
 	if (v) {
