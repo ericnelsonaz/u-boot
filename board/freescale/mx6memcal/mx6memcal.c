@@ -138,7 +138,6 @@ static int mmdc_do_dqs_calibration
 {
 	u32 esdmisc_val, v;
 	int write_cal_err = 0;
-	int cs0_enable_initial;
 	int cs1_enable_initial;
 	int PDDWord = 0x00FFFF00;
 	int errorcount = 0;
@@ -149,7 +148,6 @@ static int mmdc_do_dqs_calibration
 	u32 ddr_mr1;
 
 	/* check to see which chip selects are enabled */
-	cs0_enable_initial = 1;
 	cs1_enable_initial = (sysinfo->ncs == 2);
 
 	/*
@@ -241,8 +239,7 @@ static int mmdc_do_dqs_calibration
 	 * per the ref manual, issue one refresh cycle mdscr[CMD]= 0x2,
 	 * this also sets the CON_REQ bit.
 	 */
-	if (cs0_enable_initial)
-		writel(0x00008020, &mmdc0->mdscr);
+	writel(0x00008020, &mmdc0->mdscr);
 	if (cs1_enable_initial)
 		writel(0x00008028, &mmdc0->mdscr);
 
@@ -282,11 +279,9 @@ static int mmdc_do_dqs_calibration
 	 * in the MPSWDAR0 and then poll this bit until it clears to indicate completion of the
 	 * write access.
 	 */
-	v = readl(&mmdc0->mpswdar0);
-	v |= 1;
-	writel(v, &mmdc0->mpswdar0);
-
-	while (readl(&mmdc0->mpswdar0) & 0x00000001);
+	clrsetbits_le32(&mmdc0->mpswdar0, 0, 1);
+	while (readl(&mmdc0->mpswdar0) & 1)
+		;
 
 	/*
 	 * Set the RD_DL_ABS# bits to their default values (will be calibrated later in
@@ -313,23 +308,23 @@ static int mmdc_do_dqs_calibration
 	 * were seen during calibration. Set bit 30: chooses option to wait 32
 	 * cycles instead of 16 before comparing read data
 	 */
-	v = readl(&mmdc0->mpdgctrl0);
-	v |= (1 << 30);
-	writel(v, &mmdc0->mpdgctrl0);
+	clrsetbits_le32(&mmdc0->mpdgctrl0, 0, 1 << 30);
 
 	/*
 	 * Wait for ack
 	 */
-	while (!(readl(&mmdc0->mpdgctrl0) & (1<<30)));
+	while (!(readl(&mmdc0->mpdgctrl0) & (1<<30)))
+		;
 
 	/* Set bit 28 to start automatic read DQS gating calibration */
-	writel(readl(&mmdc0->mpdgctrl0) | (1 << 28), &mmdc0->mpdgctrl0);
+	clrsetbits_le32(&mmdc0->mpdgctrl0, 0, 1 << 28);
 
 	/*
 	 * Poll for completion
 	 * mpdgctrl0[HW_DG_EN] should be 0
 	 */
-	while (readl(&mmdc0->mpdgctrl0) & 0x10000000);
+	while (readl(&mmdc0->mpdgctrl0) & 0x10000000)
+		;
 
 	/*
 	 * Check to see if any errors were encountered during calibration
@@ -475,9 +470,7 @@ static int mmdc_do_dqs_calibration
 	/* re-enable SDE (chip selects) if they were set initially */
 	if (cs1_enable_initial == 1)
 		v |= (1 << 30); /* set SDE_1 */
-
-	if (cs0_enable_initial == 1)
-		v |= (1 << 31); /* set SDE_0 */
+	v |= (1 << 31); /* set SDE_0 */
 
 	writel(v, &mmdc0->mdctl);
 
