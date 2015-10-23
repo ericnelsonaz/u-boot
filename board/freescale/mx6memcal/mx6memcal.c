@@ -45,260 +45,6 @@ int board_early_init_f(void)
 }
 
 static struct mxc_ccm_reg * const imx_ccm = (struct mxc_ccm_reg *)CCM_BASE_ADDR;
-#define DIV2    1
-#define DIV1    0
-
-/*
- * For DDR frequencies >= 135MHz and <= 500MHz
- * Two parameters are passed in: 
- * i = increment variable, which the "frac" value is calculated
- * divider = this indicates whether or not to div-by-1 or div-by-2
-*/
-static void increase_528pfd2(int i, int divider)
-{
-	u32 frac;
-
-	// switch the periph_clk domain to "pll3" (480MHz USB OTG PLL?)
-	// first, set CBCMR:periph_clk2_sel to select "pll3" bits[13:12]=00 for the periph_clk2_clk clock mux
-	clrsetbits_le32(&imx_ccm->cbcmr, 0x00003000, 0x00000000);
-	// next, set CBCDR:periph_clk_sel to the periph_clk2_sel clock source (that got set up for "pll3")
-	// bit[25]=1
-	clrsetbits_le32(&imx_ccm->cbcdr, 0x02000000, 0x02000000);
-
-	// ungate PFD2, clear bit 23
-	clrsetbits_le32(&imx_ccm->analog_pfd_528, 0x00800000, 0x00000000);
-
-	// also, make sure DIV_SELECT is set to 1 in the CCM_ANALOG_PLL_528 (HW_ANADIG_PLL_528_RW)
-	// register to ensure Fout=Fref*22 (24MHz * 22) = 528MHz
-	clrsetbits_le32(&imx_ccm->analog_pll_528, 0x00000001, 0x00000001);
-
-	// wait for 528MHz PLL to lock
-	while (!(readl((u32)&imx_ccm->analog_pll_528) & 0x80000000)) ;
-
-	// set dividers that are sourced from the 528PLL: AXI_CLK_ROOT and 132M_CLK_ROOT to default 
-	// set CBCDR:axi_podf to div-by-1 bits[18:16]=001 and CBCDR:ahb_podf to div-by-4 bits[12:10]=011
-	clrsetbits_le32(&imx_ccm->cbcdr, 0x00071C00, 0x00010C00);
-
-	// configure the MMDC divider in the CCM
-	// also configure the frac divider
-	if (divider == DIV1) {
-		// mmdc_ch0_axi_podf is div-by-1
-		clrsetbits_le32(&imx_ccm->cbcdr, 0x00380000, 0x00000000);
-		// poll the mmdr_ch0_podf_busy bit
-		while (readl((u32)&imx_ccm->cdhipr) & 0x00000010) ;
-
-		frac = 53 - i;
-	}
-	else if (divider == DIV2) {
-		// mmdc_ch0_axi_podf is div-by-2
-		clrsetbits_le32(&imx_ccm->cbcdr, 0x00380000, 0x00080000);
-		// poll the mmdr_ch0_podf_busy bit
-		while (readl((u32)&imx_ccm->cdhipr) & 0x00000010) ;
-
-		frac = 35 - i;
-	}
-	else {
-		printf("** Incorrect divder value \n");
-		reset_cpu(0);
-		frac = 0;
-	}
-
-	// write the frac value into PFD2
-	frac = frac << 16;
-	clrsetbits_le32(&imx_ccm->analog_pfd_528, 0x003F0000, frac);
-
-	// Switch CBCMR pre_periph_clk_sel to the 400M PFD2 source 
-	// bits[19:18] = 01
-	clrsetbits_le32(&imx_ccm->cbcmr, 0x000C0000, 0x00040000);
-
-	// Now switch CBCDR:periph_clk_sel to the pre_periph_clk_sel mux clock source 
-	// bit[25]=0
-	clrsetbits_le32(&imx_ccm->cbcdr, 0x02000000, 0x00000000);
-}
-
-/* For DDR frequencies >= 528MHz  */
-/* PLL denom is set to 1000, numerator is varied from 0, 200, 400, 600, 800, 999  */
-/* This yields fractional part as 0, 0.2, 0.4, 0.6, 0.8, and 0.999 */
-static u32 increase_pll528(int i)
-{
-	u32 ddr_freq_above_528;     // pass back the integer value fo the ddr freq
-	double ddr_freq_act;        // this variable is used to calculate the actual ddr freq
-	int temp;
-
-	// make sure that mmdc_ch0_axi_podf is div-by-1
-	clrsetbits_le32(&imx_ccm->cbcdr, 0x00380000, 0x00000000);
-	
-	// poll the mmdr_ch0_podf_busy bit
-	while (readl((u32)&imx_ccm->cdhipr) & 0x00000010) ;
-	
-	temp = readl((u32)&imx_ccm->cbcdr);
-	if ((temp & 0x00380000) != 0) {
-		printf("MMDC podf didn't get changed! \n");
-		clrsetbits_le32(&imx_ccm->cbcdr, 0x00380000, 0x00000000);
-	}
-
-	// switch the periph_clk domain to "pll3" (480MHz USB OTG PLL3) while we are re-programming 528PLL
-	// first, set CBCMR:periph_clk2_sel to select "pll3" bits[13:12]=00 for the periph_clk2_clk clock mux
-	clrsetbits_le32(&imx_ccm->cbcmr, 0x00003000, 0x00000000);
-    
-	// next, set CBCDR:periph_clk_slk to the periph_clk2_clk clock source (that got set up for "pll3")
-	// bit[25]=1
-	clrsetbits_le32(&imx_ccm->cbcdr, 0x02000000, 0x02000000);
-
-	// set div_sel to 1 to have a multiplier of 22 (bit 0); 24*(22 + num/den)
-	clrsetbits_le32(&imx_ccm->analog_pll_528, 0x00000001, 0x00000001);
-
-	// MFD is always 1000 (to allow for div-by-1000 in the equation MFN/(MFD)
-	writel(1000,(u32)&imx_ccm->analog_pll_528_denom);
-
-	// increase dividers that are sourced from the 528PLL: AXI_CLK_ROOT and 132M_CLK_ROOT
-	// set CBCDR:axi_podf to div-by-3 bits[18:16]=010 and CBCDR:ahb_podf to div-by-6 bits[12:10]=101
-	clrsetbits_le32(&imx_ccm->cbcdr, 0x00071C00, 0x00021400);
-
-	// 528MHz < freq < 576
-	// this chooses the PLL output as source for DDR
-	if ((i >= 0) && (i <= 10)) {
-		// first, for the pre_periph_clk_sel mux, choose the PLL2 output (not PFD)
-		// Ensure pre_periph_clk_sel mux is set to the 528PLL, CBCMR:pre_periph_clk_sel bits[19:18]=00
-		clrsetbits_le32(&imx_ccm->cbcmr, 0x000C0000, 0x00000000);
-		
-		writel(i * (200),(u32)&imx_ccm->analog_pll_528_num);
-		// wait for 528MHz PLL to lock
-		while (!(readl((u32)&imx_ccm->analog_pll_528) & 0x80000000)) ;
-		
-		ddr_freq_act = (float)24 *(22 + (float)(i * 200) / 1000);
-		ddr_freq_above_528 = ddr_freq_act;  // turn it to an integer
-		// next, set CBCDR:periph_clk_slk to the 528PLL
-		// bit[25]=0
-		clrsetbits_le32(&imx_ccm->cbcdr, 0x02000000, 0x00000000);
-		
-		return ddr_freq_above_528;
-	// 580MHz < freq < 591MHz
-	// this chooses the PFD2 output as source for DDR
-	} else if ((i >= 11) && (i <= 29)) {
-		// first, for the pre_periph_clk_sel mux, choose the PFD2 output
-		// ungate PFD2, clear bit 23
-		clrsetbits_le32(&imx_ccm->analog_pfd_528, 0x00800000, 0x00000000);
-		// Switch CBCMR pre_periph_clk_sel to the PFD2 source 
-		// bits[19:18] = 01
-		clrsetbits_le32(&imx_ccm->cbcmr, 0x000C0000, 0x00040000);
-
-		// 580MHz < freq < 591MHz
-		// use 480Mhz (div_sel=0) and PFD2 with N=16
-		if ((i >= 11) && (i <= 13)) {
-			// set div_sel to 0 to have a multiplier of 20 (bit 0); 24*(20 + num/den)
-			clrsetbits_le32(&imx_ccm->analog_pll_528, 0x00000001, 0x00000000);
-			
-			// now set PFD2 frac (N) to 16
-			clrsetbits_le32(&imx_ccm->analog_pfd_528, 0x003F0000, 0x00100000);
-			
-			if (i == 11) {
-				writel(1500,(u32)&imx_ccm->analog_pll_528_num);
-				ddr_freq_act = (float)24 *(20 + (float)1500 / 1000) * (float)18 / 16;
-			} else if (i == 12) {
-				writel(1700,(u32)&imx_ccm->analog_pll_528_num);
-				ddr_freq_act = (float)24 *(20 + (float)1700 / 1000) * (float)18 / 16;
-			} else if (i == 13) {
-				writel(1900,(u32)&imx_ccm->analog_pll_528_num);
-				ddr_freq_act = (float)24 *(20 + (float)1900 / 1000) * (float)18 / 16;
-			}
-			// wait for 528MHz PLL to lock
-			while (!(readl((u32)&imx_ccm->analog_pll_528) & 0x80000000)) ;
-	
-			ddr_freq_above_528 = ddr_freq_act;  // turn it to an integer
-			// next, set CBCDR:periph_clk_slk to the 528PLL mux
-			// bit[25]=0
-			clrsetbits_le32(&imx_ccm->cbcdr, 0x02000000, 0x00000000);
-	
-			return ddr_freq_above_528;
-	
-		/* freq = 594 to 620MHz */
-		// use 528Mhz (div_sel=1) and PFD2 with N=16
-		} else if ((i >= 14) && (i <= 19)) {
-			// set div_sel to 0 to have a multiplier of 22 (bit 1); 24*(22 + num/den)
-			clrsetbits_le32(&imx_ccm->analog_pll_528, 0x00000001, 0x00000001);
-	
-			// program the PLL num/den fractional part to increase PLL output
-			writel((i - 14) * 200,(u32)&imx_ccm->analog_pll_528_num);
-	
-			// wait for 528MHz PLL to lock
-			while (!(readl((u32)&imx_ccm->analog_pll_528) & 0x80000000)) ;
-	
-			// now set PFD2 frac (N) to 16
-			clrsetbits_le32(&imx_ccm->analog_pfd_528, 0x003F0000, 0x00100000);
-	
-			ddr_freq_act = (float)24 *(22 + (float)(i - 14) * 200 / 1000) * (float)18 / 16;
-			ddr_freq_above_528 = ddr_freq_act;  // turn it to an integer
-			// next, set CBCDR:periph_clk_slk to the 528PLL mux
-			// bit[25]=0
-			clrsetbits_le32(&imx_ccm->cbcdr, 0x02000000, 0x00000000);
-			
-			return ddr_freq_above_528;
-	
-		/* freq = 623 to 678MHz */
-		// use 480Mhz (div_sel=0) and PFD2 with N=14        
-		} else if ((i >= 20) && (i <= 29)) {
-			// set div_sel to 0 to have a multiplier of 20 (bit 0); 24*(20 + num/den)
-			clrsetbits_le32(&imx_ccm->analog_pll_528, 0x00000001, 0x00000000);
-	
-			// program the PLL num/den fractional part to increase PLL output
-			writel((i - 19) * 200,(u32)&imx_ccm->analog_pll_528_num);
-	
-			// now set PFD2 frac (N) to 14
-			clrsetbits_le32(&imx_ccm->analog_pfd_528, 0x003F0000, 0x000E0000);
-	
-			ddr_freq_act = (float)24 *(20 + (float)(i - 19) * 200 / 1000) * (float)18 / 14;
-			ddr_freq_above_528 = ddr_freq_act;  // turn it to an integer
-			// next, set CBCDR:periph_clk_slk to the 528PLL mux
-			// bit[25]=0
-			clrsetbits_le32(&imx_ccm->cbcdr, 0x02000000, 0x00000000);
-			
-			return ddr_freq_above_528;
-		}
-	} else {                            // fail if invalid freq
-		printf("Error, outside of supported frequencies, setting back to 528MHz \n");
-		writel(0,(u32)&imx_ccm->analog_pll_528_num);
-	}
-	return 0;
-}
-
-#define DDR_DIV_528MHZ 35
-#define DDR_DIV_400MHZ 29
-
-static u32 set_ddr_clock(int i)
-{
-	u32 ddr_freq;
-
-	// First make sure that the PHY measurement unit is NOT in bypass mode 
-	clrsetbits_le32(&mmdc0->mpmur0, 0x00000400, 0x00000000);
-	clrsetbits_le32(&mmdc1->mpmur0, 0x00000400, 0x00000000);
-
-	// use PFD2 as clock source, with div-by-2    
-	// 135MHz < DDR freq < 264MHz
-	if ((i >= 0) && (i <= 17)) {
-                increase_528pfd2(i, DIV2);
-                ddr_freq = (528 * 18 / (35 - i)) / 2;
-                return ddr_freq;
-
-		// use PFD2 as clock source, div-by-1
-		// 271MHz < DDR freq < 500MHz
-        } else if ((i >= 18) && (i <= 34)) {
-		increase_528pfd2(i, DIV1);
-		ddr_freq = (528 * 18 / (53 - i));
-		return ddr_freq;
-
-		// for freq >=528MHz
-		// will either use the PLL2 or PFD2 output depending on freq
-	} else if ((i >= 35) && (i <= 59)) {
-		// have to normalize the variable 'i' starting back at zero
-		ddr_freq = increase_pll528(i - 35);
-		return ddr_freq;
-	} else {
-		printf("**Not a supported freq, stopping \n");
-		reset_cpu(0);
-	}
-        return 0;
-}
 
 static int mmdc_do_write_level_calibration(void)
 {
@@ -1010,7 +756,6 @@ static void gpr_init(void)
  */
 void board_init_f(ulong dummy)
 {
-	int ddr_freq;
 	int errs;
 
 	memset((void *)gd, 0, sizeof(struct global_data));
@@ -1030,18 +775,14 @@ void board_init_f(ulong dummy)
 	preloader_console_init();
 
 	if (is_cpu_type(MXC_CPU_MX6Q)) {
-		ddr_freq = set_ddr_clock(DDR_DIV_528MHZ);
 		mx6dq_dram_iocfg(CONFIG_DDRWIDTH, &mx6dq_ddr_ioregs,
 				 &mx6dq_grp_ioregs);
 	}
 	else {
-		ddr_freq = set_ddr_clock(DDR_DIV_400MHZ);
 		mx6sdl_dram_iocfg(CONFIG_DDRWIDTH, &mx6sdl_ddr_ioregs,
 				  &mx6sdl_grp_ioregs);
 	}
-	mx6_dram_cfg(&sysinfo, 0, &ddrtype);
-
-	printf("run calibration at %u MHz\n",ddr_freq);
+	mx6_dram_cfg(&sysinfo, NULL, &ddrtype);
 	errs = mmdc_do_dqs_calibration();
 	if (errs)
 		printf("completed with %d errors\n", errs);
