@@ -46,69 +46,6 @@ int board_early_init_f(void)
 
 static struct mxc_ccm_reg * const imx_ccm = (struct mxc_ccm_reg *)CCM_BASE_ADDR;
 
-static int mmdc_do_write_level_calibration(void)
-{
-	u32 zq_val;
-	u32 ddr_mr1 = is_cpu_type(MXC_CPU_MX6Q) ? 0x42 : 0x4;
-
-	/*
-	 * disable ZQ calibration
-	 * before proceeding with Write Leveling calibration
-	 */
-	zq_val = readl(&mmdc0->mpzqhwctrl);
-	writel(zq_val & ~(0x3), &mmdc0->mpzqhwctrl);
-	writel(0x00008000, &mmdc0->mdscr);
-	/*
-	 * poll to make sure the con_ack bit was asserted
-	 */
-	while (!(readl(&mmdc0->mdscr) & 0x00004000))
-		;
-
-	/*
-	 * Configure the external DDR device to enter write leveling mode
-	 * through Load Mode Register command
-	 * Register setting:
-	 * Bits[31:16] MR1 value (0x0080 write leveling enable)
-	 * Bit[9] set WL_EN to enable MMDC DQS output
-	 * Bits[6:4] set CMD bits for Load Mode Register programming
-	 * Bits[2:0] set CMD_BA to 0x1 for DDR MR1 programming
-	 */
-	writel(0x00808231, &mmdc0->mdscr);
-
-	/* Activate automatic calibration by setting MPWLGCR[HW_WL_EN] */
-	writel(0x00000001, &mmdc0->mpwlgcr);
-
-	/* Upon completion of this process the MMDC de-asserts the MPWLGCR[HW_WL_EN] */
-	while (readl(&mmdc0->mpwlgcr) & 0x00000001);
-
-	/* check for any errors: check both PHYs for x64 configuration, if x32, check only PHY0 */
-	if ((readl(&mmdc0->mpwlgcr) & 0x00000F00) ||
-			(readl(&mmdc1->mpwlgcr) & 0x00000F00)) {
-		printf("write leveling error 0x%08x/0x%08x\n",
-                       readl(&mmdc0->mpwlgcr),
-                       readl(&mmdc1->mpwlgcr));
-		return -1;
-	}
-
-	/*
-	 * User should issue MRS command to exit write leveling mode
-	 * through Load Mode Register command
-	 * Register setting:
-	 * Bits[31:16] MR1 value "ddr_mr1" value from initialization
-	 * Bit[9] clear WL_EN to disable MMDC DQS output
-	 * Bits[6:4] set CMD bits for Load Mode Register programming
-	 * Bits[2:0] set CMD_BA to 0x1 for DDR MR1 programming
-	 */
-	writel(((ddr_mr1 << 16)+0x8031), &mmdc0->mdscr);
-
-	writel(zq_val, &mmdc0->mpzqhwctrl);
-
-	/* clear CON_REQ */
-	writel(0, &mmdc0->mdscr);
-
-	return 0;
-}
-
 static void modify_dg_result(u32 volatile *reg_st0, u32 volatile *reg_st1, u32 volatile *reg_ctrl)
 {
 	u32 dg_tmp_val, dg_dl_abs_offset, dg_hc_del, val_ctrl;
@@ -153,30 +90,22 @@ static void mmdc_force_delay_measurement(int data_bus_size)
 {
 	writel(0x800, &mmdc0->mpmur0);
 
-	if (data_bus_size == 0x2)
+	if (data_bus_size == 2)
 		writel(0x800, &mmdc1->mpmur0);
 }
 
 static void mmdc_reset_read_data_fifos(void)
 {
-	uint32_t v;
-
 	/*
 	 * Reset the read data FIFOs (two resets); only need to issue reset to PHY0 since in x64
 	 * mode, the reset will also go to PHY1
 	 * read data FIFOs reset1
 	 */
-	v = readl(&mmdc0->mpdgctrl0);
-	v |= 0x80000000;
-	writel(v, &mmdc0->mpdgctrl0);
-
+	clrsetbits_le32(&mmdc0->mpdgctrl0, 0, 0x80000000);
 	while (readl((&mmdc0->mpdgctrl0)) & 0x80000000);
 
 	/* read data FIFOs reset2 */
-	v = readl(&mmdc0->mpdgctrl0);
-	v |= 0x80000000;
-	writel(v, &mmdc0->mpdgctrl0);
-
+	clrsetbits_le32(&mmdc0->mpdgctrl0, 0, 0x80000000);
 	while (readl((&mmdc0->mpdgctrl0)) & 0x80000000);
 }
 
@@ -218,6 +147,7 @@ static int mmdc_do_dqs_calibration
 	int data_bus_size;
 	u32 volatile *const *pads;
 	u32 pad;
+	u32 ddr_mr1;
 
 	/* check to see which chip selects are enabled */
 	cs0_enable_initial = 1;
@@ -241,11 +171,63 @@ static int mmdc_do_dqs_calibration
 	clrsetbits_le32(&mmdc0->mdmisc, 0,
 			(1 << 6) | (1 << 7) | (1 << 8) | (1 << 16) | (1 << 17));
 
-	v = mmdc_do_write_level_calibration();
-	if (v) {
-		printf("mmdc_do_write_level_calibration: %d\n", v);
-		return -1 ;
+	ddr_mr1 = is_cpu_type(MXC_CPU_MX6Q) ? 0x42 : 0x4;
+
+	/*
+	 * disable ZQ calibration
+	 * before proceeding with Write Leveling calibration
+	 */
+	clrsetbits_le32(&mmdc0->mpzqhwctrl, 0x3, 0);
+	writel(0x00008000, &mmdc0->mdscr);
+
+	/*
+	 * poll to make sure the con_ack bit was asserted
+	 */
+	while (!(readl(&mmdc0->mdscr) & 0x00004000))
+		;
+
+	/*
+	 * Configure the external DDR device to enter write leveling mode
+	 * through Load Mode Register command
+	 * Register setting:
+	 * Bits[31:16] MR1 value (0x0080 write leveling enable)
+	 * Bit[9] set WL_EN to enable MMDC DQS output
+	 * Bits[6:4] set CMD bits for Load Mode Register programming
+	 * Bits[2:0] set CMD_BA to 0x1 for DDR MR1 programming
+	 */
+	writel(0x00808231, &mmdc0->mdscr);
+
+	/* Activate automatic calibration by setting MPWLGCR[HW_WL_EN] */
+	writel(0x00000001, &mmdc0->mpwlgcr);
+
+	/* Upon completion of this process the MMDC de-asserts the MPWLGCR[HW_WL_EN] */
+	while (readl(&mmdc0->mpwlgcr) & 0x00000001);
+
+	/* check for any errors: check both PHYs for x64 configuration, if x32, check only PHY0 */
+	if ((readl(&mmdc0->mpwlgcr) & 0x00000F00) ||
+			(readl(&mmdc1->mpwlgcr) & 0x00000F00)) {
+		printf("write leveling error 0x%08x/0x%08x\n",
+                       readl(&mmdc0->mpwlgcr),
+                       readl(&mmdc1->mpwlgcr));
+		return -1;
 	}
+
+	/*
+	 * User should issue MRS command to exit write leveling mode
+	 * through Load Mode Register command
+	 * Register setting:
+	 * Bits[31:16] MR1 value "ddr_mr1" value from initialization
+	 * Bit[9] clear WL_EN to disable MMDC DQS output
+	 * Bits[6:4] set CMD bits for Load Mode Register programming
+	 * Bits[2:0] set CMD_BA to 0x1 for DDR MR1 programming
+	 */
+	writel(((ddr_mr1 << 16)+0x8031), &mmdc0->mdscr);
+
+	/* restore ZQ settings */
+	clrsetbits_le32(&mmdc0->mpzqhwctrl, 0, 0x3);
+
+	/* clear CON_REQ */
+	writel(0, &mmdc0->mdscr);
 
 	if (is_cpu_type(MXC_CPU_MX6Q))
 		pads = mx6q_sdqs_pads;
@@ -373,7 +355,7 @@ static int mmdc_do_dqs_calibration
 
 	if (errorcount) {
                 printf("%s: read calibration error count %d, bus size %d\n", __func__, errorcount, data_bus_size);
-		return -1;
+		return errorcount;
 	}
 
 	/*
