@@ -465,14 +465,9 @@ static int mmdc_do_dqs_calibration
 	for (pad=0; pad < ARRAY_SIZE(mx6q_sdqs_pads); pad++)
 		writel(readl(pads[pad]) & ~0xF000,pads[pad]);
 
-	v = readl(&mmdc0->mdctl);
-
 	/* re-enable SDE (chip selects) if they were set initially */
-	if (cs1_enable_initial == 1)
-		v |= (1 << 30); /* set SDE_1 */
-	v |= (1 << 31); /* set SDE_0 */
-
-	writel(v, &mmdc0->mdctl);
+	clrsetbits_le32(&mmdc0->mdctl, 0,
+			(1 << 31) | (cs1_enable_initial << 30));
 
 	/* enable to auto refresh */
 	writel((0 << 14) | /* REF_SEL: Periodic refresh cycle: 64kHz */
@@ -483,7 +478,8 @@ static int mmdc_do_dqs_calibration
 	writel(0x0, &mmdc0->mdscr); /* CS0 */
 
 	/* poll to make sure the con_ack bit is clear */
-	while (readl(&mmdc0->mdscr) & 0x00004000) ;
+	while (readl(&mmdc0->mdscr) & 0x00004000)
+		;
 
 	printf("mmdc0->mpdgctrl0\t= 0x%08X\n", readl(&mmdc0->mpdgctrl0));
 	printf("mmdc0->mpdgctrl1\t= 0x%08X\n", readl(&mmdc0->mpdgctrl1));
