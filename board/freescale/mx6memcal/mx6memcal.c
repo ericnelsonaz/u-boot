@@ -136,7 +136,7 @@ static int mmdc_do_dqs_calibration
 	 struct mx6_ddr3_cfg const *ddrtype,
 	 struct mx6_mmdc_calibration *calib)
 {
-	u32 esdmisc_val, v;
+	u32 esdmisc_val, mask;
 	int write_cal_err = 0;
 	int cs1_enable_initial;
 	int PDDWord = 0x00FFFF00;
@@ -255,14 +255,11 @@ static int mmdc_do_dqs_calibration
 	 * the other chip select not being target for calibration to avoid any
 	 * potential issues This will get re-enabled at end of calibration.
 	 */
-	v = readl(&mmdc0->mdctl);
-	if ((readl(&mmdc0->mdmisc) & 0x00100000) == 0) {
-		v &= ~(1 << 30); /* clear SDE_1 */
-	}
-	else {
-		v &= ~(1 << 31); /* clear SDE_0 */
-	}
-	writel(v, &mmdc0->mdctl);
+	if ((readl(&mmdc0->mdmisc) & 0x00100000) == 0)
+		mask = (1 << 30); /* clear SDE_1 */
+	else
+		mask = (1 << 31); /* clear SDE_0 */
+	clrsetbits_le32(&mmdc0->mdctl, mask, 0);
 
 	/*
 	 * check to see which chip selects are now enabled for the remainder
@@ -387,7 +384,7 @@ static int mmdc_do_dqs_calibration
 
 	/*
 	 * Read delay-line calibration
-	 * Start the automatic read calibration process by asserting mprddlhwctl[ HW_RD_DL_EN]
+	 * Start the automatic read calibration process by asserting mprddlhwctl[HW_RD_DL_EN]
 	 */
 	writel(0x00000030, &mmdc0->mprddlhwctl);
 
@@ -461,12 +458,10 @@ static int mmdc_do_dqs_calibration
 	mmdc_reset_read_data_fifos();
 
 	/* enable DDR logic power down timer */
-	v = readl(&mmdc0->mdpdc) | 0x00005500;
-	writel(v, &mmdc0->mdpdc);
+	clrsetbits_le32(&mmdc0->mdpdc, 0, 0x00005500);
 
-	/* enable Adopt power down timer */
-	v = readl(&mmdc0->mapsr) & 0xfffffff7;
-	writel(v, &mmdc0->mapsr);
+	/* enable auto power down timer */
+	clrsetbits_le32(&mmdc0->mapsr, 1, 0);
 
 	/* restore mdmisc value (RALAT, WALAT) */
 	writel(esdmisc_val, &mmdc1->mdmisc);
