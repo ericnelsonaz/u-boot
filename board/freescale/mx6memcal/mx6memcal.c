@@ -675,6 +675,19 @@ static struct mx6_ddr3_cfg const ddrtype = {
 	.trcmin = 4875,
 	.trasmin = 3500,
 };
+#elif defined(CONFIG_H5TQ4G63AFR)
+static struct mx6_ddr3_cfg const ddrtype = {
+	.mem_speed = 1600,
+	.density = 4,
+	.width = 16,
+	.banks = 8,
+	.rowaddr = 15,
+	.coladdr = 10,
+	.pagesz = 2,
+	.trcd = 1375,
+	.trcmin = 4875,
+	.trasmin = 3500,
+};
 #else
 #error undefined memory type
 #endif
