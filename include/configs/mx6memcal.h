@@ -21,7 +21,13 @@
 #include <asm/imx-common/gpio.h>
 
 #define CONFIG_MXC_UART
+#ifdef CONFIG_SERIAL_CONSOLE_UART1
+#define CONFIG_MXC_UART_BASE		UART1_BASE
+#elif defined(CONFIG_SERIAL_CONSOLE_UART2)
 #define CONFIG_MXC_UART_BASE		UART2_BASE
+#else
+#error please define serial console (CONFIG_SERIAL_CONSOLE_UARTx)
+#endif
 #define CONFIG_BAUDRATE			115200
 
 #define CONFIG_SYS_CBSIZE	       1024
