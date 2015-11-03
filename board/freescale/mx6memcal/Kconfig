@@ -29,6 +29,9 @@ config MT41K128M16JT
 config H5TQ4G63AFR
 	bool "Hynix H5TQ4G63AFR"
 
+config H5TQ2G63DFR
+	bool "Hynix H5TQ2G63DFR"
+
 endchoice
 
 choice
