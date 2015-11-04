@@ -44,6 +44,12 @@ static iomux_v3_cfg_t const uart_pads[] = {
 #endif
 };
 
+#ifdef CONFIG_DDR3
+#define GRP_DDRTYPE	0x000C0000
+#else
+#define GRP_DDRTYPE	0x00080000
+#endif
+
 #define mmdc0 ((struct mmdc_p_regs volatile *)MMDC_P0_BASE_ADDR)
 #define mmdc1 ((struct mmdc_p_regs volatile *)MMDC_P1_BASE_ADDR)
 #define mx6q_ddrmux ((struct mx6dq_iomux_ddr_regs volatile *)MX6DQ_IOM_DDR_BASE)
@@ -568,7 +574,7 @@ static struct mx6dq_iomux_ddr_regs const mx6dq_ddr_ioregs = {
 /* configure MX6Q/DUAL mmdc GRP io registers */
 static struct mx6dq_iomux_grp_regs const mx6dq_grp_ioregs = {
 	/* DDR3 */
-	.grp_ddr_type = 0x000c0000,
+	.grp_ddr_type = GRP_DDRTYPE,
 	.grp_ddrmode_ctl = 0x00020000,
 	/* disable DDR pullups */
 	.grp_ddrpke = 0x00000000,
@@ -627,7 +633,7 @@ static struct mx6sdl_iomux_ddr_regs const mx6sdl_ddr_ioregs = {
 /* configure MX6SOLO/DUALLITE mmdc GRP io registers */
 static struct mx6sdl_iomux_grp_regs const mx6sdl_grp_ioregs = {
 	/* DDR3 */
-	.grp_ddr_type = 0x000c0000,
+	.grp_ddr_type = GRP_DDRTYPE,
 	/* SDQS[0:7]: Differential input, 40 ohm */
 	.grp_ddrmode_ctl = 0x00020000,
 	/* disable DDR pullups */
@@ -676,7 +682,7 @@ const struct mx6sl_iomux_grp_regs mx6sl_grp_ioregs = {
 	.grp_ddrmode_ctl = 0x00020000,
 	.grp_ddrpke = 0x00000000,
 	.grp_ddrmode = 0x00020000,
-	.grp_ddr_type = 0x00080000,		/* LPDDR */
+	.grp_ddr_type = GRP_DDRTYPE,
 };
 
 static struct mx6_ddr_sysinfo const sysinfo = {
