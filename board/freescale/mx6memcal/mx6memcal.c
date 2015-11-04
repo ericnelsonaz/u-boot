@@ -706,6 +706,11 @@ static struct mx6_ddr_sysinfo const sysinfo = {
 	.bi_on = 1,	/* Bank interleaving enabled */
 	.sde_to_rst = 0x10,	/* 14 cycles, 200us (JEDEC default) */
 	.rst_to_cke = 0x23,	/* 33 cycles, 500us (JEDEC default) */
+#ifdef CONFIG_DDR3
+	.ddr_type = DDR_TYPE_DDR3,
+#else
+	.ddr_type = DDR_TYPE_LPDDR2,
+#endif
 };
 
 #ifdef CONFIG_MT41K512M16TNA
