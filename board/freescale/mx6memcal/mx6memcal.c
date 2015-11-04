@@ -5,6 +5,7 @@
  * SPDX-License-Identifier:     GPL-2.0+
  */
 
+#define DEBUG
 #include <common.h>
 #include <i2c.h>
 #include <asm/io.h>
@@ -177,6 +178,8 @@ static int mmdc_do_dqs_calibration
 			(7 << 6) | (3 << 16));
 	ddr_mr1 = is_cpu_type(MXC_CPU_MX6Q) ? 0x42 : 0x4;
 
+	debug("ddr_mr1 == %x\n", ddr_mr1);
+
 	/*
 	 * disable ZQ calibration
 	 * before proceeding with Write Leveling calibration
@@ -184,6 +187,7 @@ static int mmdc_do_dqs_calibration
 	clrsetbits_le32(&mmdc0->mpzqhwctrl, 0x3, 0);
 	writel(0x00008000, &mmdc0->mdscr);
 
+	debug("wait for con_ack\n");
 	/*
 	 * poll to make sure the con_ack bit was asserted
 	 */
@@ -204,6 +208,7 @@ static int mmdc_do_dqs_calibration
 	/* Activate automatic calibration by setting MPWLGCR[HW_WL_EN] */
 	writel(0x00000001, &mmdc0->mpwlgcr);
 
+	debug("wait for MPWLGCR\n");
 	/* Upon completion of this process the MMDC de-asserts the MPWLGCR[HW_WL_EN] */
 	while (readl(&mmdc0->mpwlgcr) & 0x00000001)
 		;
@@ -216,6 +221,8 @@ static int mmdc_do_dqs_calibration
                        readl(&mmdc1->mpwlgcr));
 		return -1;
 	}
+
+	debug("no errors in write leveling\n");
 
 	/*
 	 * User should issue MRS command to exit write leveling mode
@@ -251,6 +258,7 @@ static int mmdc_do_dqs_calibration
 	if (cs1_enable_initial)
 		writel(0x00008028, &mmdc0->mdscr);
 
+	debug("wait for con_ack2\n");
 	/* poll to make sure the con_ack bit was asserted */
 	while (!(readl(&mmdc0->mdscr) & 0x00004000))
 		;
@@ -286,6 +294,7 @@ static int mmdc_do_dqs_calibration
 	 * write access.
 	 */
 	clrsetbits_le32(&mmdc0->mpswdar0, 0, 1);
+	debug("wait for mpswdar0\n");
 	while (readl(&mmdc0->mpswdar0) & 1)
 		;
 
@@ -301,6 +310,7 @@ static int mmdc_do_dqs_calibration
 	/* Force a measurement, for previous delay setup to take effect */
 	mmdc_force_delay_measurement(sysinfo->dsize);
 
+	debug("reset data fifos\n");
 	/*
 	 * Read DQS Gating calibration
 	 */
@@ -319,6 +329,7 @@ static int mmdc_do_dqs_calibration
 	/*
 	 * Wait for ack
 	 */
+	debug("wait for ack\n");
 	while (!(readl(&mmdc0->mpdgctrl0) & (1<<30)))
 		;
 
@@ -329,6 +340,7 @@ static int mmdc_do_dqs_calibration
 	 * Poll for completion
 	 * mpdgctrl0[HW_DG_EN] should be 0
 	 */
+	debug("poll for completion\n");
 	while (readl(&mmdc0->mpdgctrl0) & 0x10000000)
 		;
 
@@ -353,6 +365,7 @@ static int mmdc_do_dqs_calibration
 		}
 	}
 
+	debug("error count %d\n", errorcount);
 	if (errorcount) {
                 printf("%s: read calibration error count %d, bus size %d\n", __func__, errorcount, sysinfo->dsize);
 		return errorcount;
@@ -361,6 +374,7 @@ static int mmdc_do_dqs_calibration
 	/* now disable mpdgctrl0[DG_CMP_CYC] */
 	clrsetbits_le32(&mmdc0->mpdgctrl0, 1 << 30, 0);
 
+	debug("set dqs delays\n");
 	/*
 	 * DQS gating absolute offset should be modified from reflecting
 	 * (HW_DG_LOWx + HW_DG_UPx)/2 to reflecting (HW_DG_UPx - 0x80)
@@ -387,6 +401,7 @@ static int mmdc_do_dqs_calibration
 	 */
 	mmdc_reset_read_data_fifos();
 
+	debug("precharge all\n");
 	mmdc_precharge_all(cs0_enable, cs1_enable);
 
 	/*
@@ -401,6 +416,7 @@ static int mmdc_do_dqs_calibration
 	 * mprddlhwctl[HW_RD_DL_EN] = 0
 	 * Also, ensure that no error bits were set
 	 */
+	debug("wait for mprddlhwctl\n");
 	while (readl(&mmdc0->mprddlhwctl) & 0x00000010)
 		;
 
@@ -421,6 +437,7 @@ static int mmdc_do_dqs_calibration
 	 */
 	mmdc_reset_read_data_fifos();
 
+	debug("precharge all2\n");
 	mmdc_precharge_all(cs0_enable, cs1_enable);
 
 	/*
@@ -442,6 +459,7 @@ static int mmdc_do_dqs_calibration
 	 * mpwrdlhwctl[HW_WR_DL_EN] = 0
 	 * Also, ensure that no error bits were set
 	 */
+	debug("poll for completion2\n");
 	while (readl(&mmdc0->mpwrdlhwctl) & 0x00000010)
 		;
 
@@ -490,6 +508,7 @@ static int mmdc_do_dqs_calibration
 	/* clear the mdscr (including the con_req bit) */
 	writel(0x0, &mmdc0->mdscr); /* CS0 */
 
+	debug("wait for con ack on completion\n");
 	/* poll to make sure the con_ack bit is clear */
 	while (readl(&mmdc0->mdscr) & 0x00004000)
 		;
