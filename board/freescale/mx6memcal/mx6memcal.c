@@ -35,6 +35,9 @@ static iomux_v3_cfg_t const uart_pads[] = {
 #elif defined(CONFIG_UART1_SD3_DAT6_7)
 	IOMUX_PADS(PAD_SD3_DAT6__UART1_RX_DATA | MUX_PAD_CTRL(UART_PAD_CTRL)),
 	IOMUX_PADS(PAD_SD3_DAT7__UART1_TX_DATA | MUX_PAD_CTRL(UART_PAD_CTRL)),
+#elif defined(CONFIG_UART1_UART1)
+	IOMUX_PADS(PAD_UART1_TXD__UART1_TXD | MUX_PAD_CTRL(UART_PAD_CTRL)),
+	IOMUX_PADS(PAD_UART1_RXD__UART1_RXD | MUX_PAD_CTRL(UART_PAD_CTRL)),
 #else
 #error select UART console pads
 #endif
@@ -626,6 +629,37 @@ static struct mx6sdl_iomux_grp_regs const mx6sdl_grp_ioregs = {
 	.grp_b7ds = 0x00000030,
 };
 
+const struct mx6sl_iomux_ddr_regs mx6sl_ddr_ioregs = {
+	.dram_sdqs0 = 0x00003030,
+	.dram_sdqs1 = 0x00003030,
+	.dram_sdqs2 = 0x00003030,
+	.dram_sdqs3 = 0x00003030,
+	.dram_dqm0 = 0x00000030,
+	.dram_dqm1 = 0x00000030,
+	.dram_dqm2 = 0x00000030,
+	.dram_dqm3 = 0x00000030,
+	.dram_cas  = 0x00000030,
+	.dram_ras  = 0x00000030,
+	.dram_sdclk_0 = 0x00000028,
+	.dram_reset = 0x00000030,
+	.dram_sdba2 = 0x00000000,
+	.dram_odt0 = 0x00000008,
+	.dram_odt1 = 0x00000008,
+};
+
+const struct mx6sl_iomux_grp_regs mx6sl_grp_ioregs = {
+	.grp_b0ds = 0x00000030,
+	.grp_b1ds = 0x00000030,
+	.grp_b2ds = 0x00000030,
+	.grp_b3ds = 0x00000030,
+	.grp_addds = 0x00000030,
+	.grp_ctlds = 0x00000030,
+	.grp_ddrmode_ctl = 0x00020000,
+	.grp_ddrpke = 0x00000000,
+	.grp_ddrmode = 0x00020000,
+	.grp_ddr_type = 0x00080000,		/* LPDDR */
+};
+
 static struct mx6_ddr_sysinfo const sysinfo = {
 	/* width of data bus:0=16,1=32,2=64 */
 #if CONFIG_DDRWIDTH == 32
@@ -709,8 +743,19 @@ static struct mx6_ddr3_cfg const ddrtype = {
 	.trcmin = 4950,
 	.trasmin = 3600,
 };
-#else
-#error undefined memory type
+#elif defined (CONFIG_MT42L256M32D2LG)
+static struct mx6_lpddr2_cfg ddrtype = {
+	.mem_speed = 800,
+	.density = 4,
+	.width = 32,
+	.banks = 8,
+	.rowaddr = 14,
+	.coladdr = 10,
+	.trcd_lp = 2000,
+	.trppb_lp = 2000,
+	.trpab_lp = 2250,
+	.trasmin = 4200,
+};
 #endif
 
 static void ccgr_init(void)
@@ -751,6 +796,10 @@ void board_init_f(ulong dummy)
 	/* UART clocks enabled and gd valid - init serial console */
 	preloader_console_init();
 
+#ifdef CONFIG_MX6SL
+	mx6sl_dram_iocfg(CONFIG_DDRWIDTH, &mx6sl_ddr_ioregs,
+			 &mx6sl_grp_ioregs);
+#else
 	if (is_cpu_type(MXC_CPU_MX6Q)) {
 		mx6dq_dram_iocfg(CONFIG_DDRWIDTH, &mx6dq_ddr_ioregs,
 				 &mx6dq_grp_ioregs);
@@ -759,6 +808,7 @@ void board_init_f(ulong dummy)
 		mx6sdl_dram_iocfg(CONFIG_DDRWIDTH, &mx6sdl_ddr_ioregs,
 				  &mx6sdl_grp_ioregs);
 	}
+#endif
 	mx6_dram_cfg(&sysinfo, NULL, &ddrtype);
 	errs = mmdc_do_dqs_calibration(&sysinfo, &calibration);
 	if (!errs) {
