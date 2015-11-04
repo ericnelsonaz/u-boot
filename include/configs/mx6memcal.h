@@ -10,6 +10,8 @@
 #ifndef __CONFIG_H
 #define __CONFIG_H
 
+#include "mx6_common.h"
+
 /* SPL */
 #define CONFIG_SPL_WATCHDOG_SUPPORT
 
@@ -22,7 +24,11 @@
 
 #define CONFIG_MXC_UART
 #ifdef CONFIG_SERIAL_CONSOLE_UART1
+#if defined(CONFIG_MX6SL)
+#define CONFIG_MXC_UART_BASE		UART1_IPS_BASE_ADDR
+#else
 #define CONFIG_MXC_UART_BASE		UART1_BASE
+#endif
 #elif defined(CONFIG_SERIAL_CONSOLE_UART2)
 #define CONFIG_MXC_UART_BASE		UART2_BASE
 #else
@@ -30,9 +36,7 @@
 #endif
 #define CONFIG_BAUDRATE			115200
 
-#define CONFIG_SYS_CBSIZE	       1024
 #define CONFIG_SYS_PBSIZE (CONFIG_SYS_CBSIZE + 16)
-#define CONFIG_SYS_MAXARGS	       48
 
 /* Physical Memory Map */
 #define CONFIG_NR_DRAM_BANKS	       1
@@ -52,10 +56,6 @@
 
 #define CONFIG_ENV_SIZE			(8 * 1024)
 #define CONFIG_ENV_IS_NOWHERE
-
-#define CONFIG_LOADADDR		       0x12000000
-#define CONFIG_SYS_LOAD_ADDR	       CONFIG_LOADADDR
-#define CONFIG_SYS_TEXT_BASE	       0x17800000
 
 #undef CONFIG_CMD_IMLS
 
