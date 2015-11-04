@@ -20,20 +20,36 @@ config DDRCS
 choice
 	prompt "Memory type"
 
+config	DDR3
+	bool "DDR3"
+
+config	LPDDR2
+	bool "LPDDR2"
+
+endchoice
+
+choice
+	prompt "Memory type"
+
 config MT41K512M16TNA
 	bool "Micron MT41K512M16TNA"
+	depends on DDR3
 
 config MT41K128M16JT
 	bool "Micron MT41K128M16JT"
+	depends on DDR3
 
 config H5TQ4G63AFR
 	bool "Hynix H5TQ4G63AFR"
+	depends on DDR3
 
 config H5TQ2G63DFR
 	bool "Hynix H5TQ2G63DFR"
+	depends on DDR3
 
 config MT42L256M32D2LG
 	bool "Micron 256Mx32 1GiB LPDDR2"
+	depends on LPDDR2
 
 endchoice
 
