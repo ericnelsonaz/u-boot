@@ -249,12 +249,20 @@ if (is_cpu_type(MXC_CPU_MX6Q)) {				\
 	imx_iomux_v3_setup_pad(MX6Q_##def);
 #define SETUP_IOMUX_PADS(x)					\
 	imx_iomux_v3_setup_multiple_pads(x, ARRAY_SIZE(x))
-#else
+#elif defined(CONFIG_MX6DL) || defined(CONFIG_MX6S)
 #define IOMUX_PADS(x) MX6DL_##x
 #define SETUP_IOMUX_PAD(def)					\
 	imx_iomux_v3_setup_pad(MX6DL_##def);
 #define SETUP_IOMUX_PADS(x)					\
 	imx_iomux_v3_setup_multiple_pads(x, ARRAY_SIZE(x))
+#elif defined(CONFIG_MX6SL)
+#define IOMUX_PADS(x) MX6_##x
+#define SETUP_IOMUX_PAD(def)					\
+	imx_iomux_v3_setup_pad(MX6_##def);
+#define SETUP_IOMUX_PADS(x)					\
+	imx_iomux_v3_setup_multiple_pads(x, ARRAY_SIZE(x))
+#else
+#error MX6UL?
 #endif
 
 #endif	/* __MACH_IOMUX_V3_H__*/
