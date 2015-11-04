@@ -32,6 +32,9 @@ config H5TQ4G63AFR
 config H5TQ2G63DFR
 	bool "Hynix H5TQ2G63DFR"
 
+config MT42L256M32D2LG
+	bool "Micron 256Mx32 1GiB LPDDR2"
+
 endchoice
 
 choice
@@ -58,6 +61,10 @@ choice
 
 	config UART1_SD3_DAT6_7
 		bool "UART1 on SD3_DAT6/7 (SabreSD)"
+		depends on SERIAL_CONSOLE_UART1
+
+	config UART1_UART1
+		bool "UART1 on UART1 (i.MX6SL EVK)"
 		depends on SERIAL_CONSOLE_UART1
 
 endchoice
