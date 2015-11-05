@@ -51,6 +51,10 @@ config MT42L256M32D2LG
 	bool "Micron 256Mx32 1GiB LPDDR2"
 	depends on LPDDR2
 
+config MT29PZZZ4D4BKESK
+	bool "Micron multi-chip 512MiB LPDDR2/4GiB eMMC"
+	depends on LPDDR2
+
 endchoice
 
 config DRAM_DRIVE_STRENGTH

@@ -803,6 +803,21 @@ static struct mx6_lpddr2_cfg ddrtype = {
 	.trpab_lp = 2250,
 	.trasmin = 4200,
 };
+#elif defined (CONFIG_MT29PZZZ4D4BKESK)
+static struct mx6_lpddr2_cfg ddrtype = {
+	.mem_speed = 800,
+	.density = 4,
+	.width = 32,
+	.banks = 8,
+	.rowaddr = 14,
+	.coladdr = 10,
+	.trcd_lp = 2000,
+	.trppb_lp = 2000,
+	.trpab_lp = 2250,
+	.trasmin = 4200,
+};
+#else
+#error please select DDR type using menuconfig
 #endif
 
 static void ccgr_init(void)
