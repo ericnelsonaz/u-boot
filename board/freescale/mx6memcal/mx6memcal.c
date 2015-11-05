@@ -121,9 +121,9 @@ static void mmdc_force_delay_measurement(int data_bus_size)
 static void mmdc_reset_read_data_fifos(void)
 {
 	/*
-	 * Reset the read data FIFOs (two resets); only need to issue reset to PHY0 since in x64
-	 * mode, the reset will also go to PHY1
-	 * read data FIFOs reset1
+	 * Reset the read data FIFOs (two resets);
+	 * only need to issue reset to PHY0 since in x64 mode,
+	 * the reset will also go to PHY1 read data FIFOs reset1
 	 */
 	clrsetbits_le32(&mmdc0->mpdgctrl0, 0, 0x80000000);
 	while (readl((&mmdc0->mpdgctrl0)) & 0x80000000);
@@ -188,9 +188,6 @@ static int mmdc_do_dqs_calibration
 	/* set RALAT and WALAT to max */
 	clrsetbits_le32(&mmdc0->mdmisc, 0,
 			(7 << 6) | (3 << 16));
-	ddr_mr1 = is_cpu_type(MXC_CPU_MX6Q) ? 0x42 : 0x4;
-
-	debug("ddr_mr1 == %x\n", ddr_mr1);
 
 	/*
 	 * disable ZQ calibration
@@ -221,13 +218,16 @@ static int mmdc_do_dqs_calibration
 	writel(0x00000001, &mmdc0->mpwlgcr);
 
 	debug("wait for MPWLGCR\n");
-	/* Upon completion of this process the MMDC de-asserts the MPWLGCR[HW_WL_EN] */
+	/* MMDC de-asserts MPWLGCR[HW_WL_EN] on completion */
 	while (readl(&mmdc0->mpwlgcr) & 0x00000001)
 		;
 
-	/* check for any errors: check both PHYs for x64 configuration, if x32, check only PHY0 */
+	/* check for any errors: check both PHYs for x64 configuration,
+	 * if x32, check only PHY0
+	 */
 	if ((readl(&mmdc0->mpwlgcr) & 0x00000F00) ||
-			(readl(&mmdc1->mpwlgcr) & 0x00000F00)) {
+			((sysinfo->dsize == 2)
+			 && (readl(&mmdc1->mpwlgcr) & 0x00000F00))) {
 		printf("write leveling error 0x%08x/0x%08x\n",
                        readl(&mmdc0->mpwlgcr),
                        readl(&mmdc1->mpwlgcr));
@@ -245,6 +245,10 @@ static int mmdc_do_dqs_calibration
 	 * Bits[6:4] set CMD bits for Load Mode Register programming
 	 * Bits[2:0] set CMD_BA to 0x1 for DDR MR1 programming
 	 */
+	/* MR1 */
+	ddr_mr1 = ((sysinfo->rtt_nom & 1) ? 1 : 0) << 2 |
+	          ((sysinfo->rtt_nom & 2) ? 1 : 0) << 6;
+	debug("ddr_mr1 == %x\n", ddr_mr1);
 	writel(((ddr_mr1 << 16)+0x8031), &mmdc0->mdscr);
 
 	/* restore ZQ settings */
@@ -520,23 +524,28 @@ static int mmdc_do_dqs_calibration
 	/* clear the mdscr (including the con_req bit) */
 	writel(0x0, &mmdc0->mdscr); /* CS0 */
 
-	debug("wait for con ack on completion\n");
+	debug("skip wait for con ack on completion\n");
 	/* poll to make sure the con_ack bit is clear */
 	while (readl(&mmdc0->mdscr) & 0x00004000)
 		;
 
+	memset(calib, 0xFF, sizeof(*calib));
 	calib->p0_mpwldectrl0 = readl(&mmdc0->mpwldectrl0);
 	calib->p0_mpwldectrl1 = readl(&mmdc0->mpwldectrl1);
-	calib->p1_mpwldectrl0 = readl(&mmdc1->mpwldectrl0);
-	calib->p1_mpwldectrl1 = readl(&mmdc1->mpwldectrl1);
 	calib->p0_mpdgctrl0 = readl(&mmdc0->mpdgctrl0);
 	calib->p0_mpdgctrl1 = readl(&mmdc0->mpdgctrl1);
-	calib->p1_mpdgctrl0 = readl(&mmdc1->mpdgctrl0);
-	calib->p1_mpdgctrl1 = readl(&mmdc1->mpdgctrl1);
 	calib->p0_mprddlctl = readl(&mmdc0->mprddlctl);
-	calib->p1_mprddlctl = readl(&mmdc1->mprddlctl);
 	calib->p0_mpwrdlctl = readl(&mmdc0->mpwrdlctl);
-	calib->p1_mpwrdlctl = readl(&mmdc1->mpwrdlctl);
+	if (sysinfo->dsize == 2) {
+		calib->p1_mpwldectrl0 = readl(&mmdc1->mpwldectrl0);
+		calib->p1_mpwldectrl1 = readl(&mmdc1->mpwldectrl1);
+		calib->p1_mpdgctrl0 = readl(&mmdc1->mpdgctrl0);
+		calib->p1_mpdgctrl1 = readl(&mmdc1->mpdgctrl1);
+		calib->p1_mprddlctl = readl(&mmdc1->mprddlctl);
+		calib->p1_mpwrdlctl = readl(&mmdc1->mpwrdlctl);
+	}
+
+	debug("returning with %d errors\n", errorcount);
 	return errorcount;
 }
 
@@ -834,6 +843,15 @@ void board_init_f(ulong dummy)
 	/* UART clocks enabled and gd valid - init serial console */
 	preloader_console_init();
 
+	if (sysinfo.dsize != 1) {
+		if (is_cpu_type(MXC_CPU_MX6SX)
+		    || is_cpu_type(MXC_CPU_MX6UL)
+		    || is_cpu_type(MXC_CPU_MX6SL)) {
+			printf("cpu type 0x%x doesn't support 64-bit bus\n",
+			       get_cpu_type());
+			reset_cpu(0);
+		}
+	}
 #ifdef CONFIG_MX6SL
 	mx6sl_dram_iocfg(CONFIG_DDRWIDTH, &mx6sl_ddr_ioregs,
 			 &mx6sl_grp_ioregs);
@@ -853,16 +871,18 @@ void board_init_f(ulong dummy)
 		printf("completed successfully\n");
 		printf(".p0_mpdgctrl0\t= 0x%08X\n", calibration.p0_mpdgctrl0);
 		printf(".p0_mpdgctrl1\t= 0x%08X\n", calibration.p0_mpdgctrl1);
-		printf(".p1_mpdgctrl0\t= 0x%08X\n", calibration.p1_mpdgctrl0);
-		printf(".p1_mpdgctrl1\t= 0x%08X\n", calibration.p1_mpdgctrl1);
 		printf(".p0_mprddlctl\t= 0x%08X\n", calibration.p0_mprddlctl);
-		printf(".p1_mprddlctl\t= 0x%08X\n", calibration.p1_mprddlctl);
 		printf(".p0_mpwrdlctl\t= 0x%08X\n", calibration.p0_mpwrdlctl);
-		printf(".p1_mpwrdlctl\t= 0x%08X\n", calibration.p1_mpwrdlctl);
 		printf(".p0_mpwldectrl0\t= 0x%08X\n",calibration.p0_mpwldectrl0);
 		printf(".p0_mpwldectrl1\t= 0x%08X\n",calibration.p0_mpwldectrl1);
-		printf(".p1_mpwldectrl0\t= 0x%08X\n",calibration.p1_mpwldectrl0);
-		printf(".p1_mpwldectrl1\t= 0x%08X\n",calibration.p1_mpwldectrl1);
+		if (sysinfo.dsize == 2) {
+			printf(".p1_mpdgctrl0\t= 0x%08X\n", calibration.p1_mpdgctrl0);
+			printf(".p1_mpdgctrl1\t= 0x%08X\n", calibration.p1_mpdgctrl1);
+			printf(".p1_mprddlctl\t= 0x%08X\n", calibration.p1_mprddlctl);
+			printf(".p1_mpwrdlctl\t= 0x%08X\n", calibration.p1_mpwrdlctl);
+			printf(".p1_mpwldectrl0\t= 0x%08X\n",calibration.p1_mpwldectrl0);
+			printf(".p1_mpwldectrl1\t= 0x%08X\n",calibration.p1_mpwldectrl1);
+		}
 	} else
 		printf("completed with %d errors\n", errs);
 
