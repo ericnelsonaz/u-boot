@@ -712,15 +712,17 @@ static struct mx6_ddr_sysinfo const sysinfo = {
 #else
 	.rtt_nom = 1 /*DDR3_RTT_60_OHM*/,	/* RTT_Nom = RZQ/4 */
 #endif
-	.walat = 0,	/* Write additional latency */
-	.ralat = 5,	/* Read additional latency */
+	.walat = CONFIG_WALAT,	/* Write additional latency */
+	.ralat = CONFIG_RALAT,	/* Read additional latency */
 	.mif3_mode = 3,	/* Command prediction working mode */
 	.bi_on = 1,	/* Bank interleaving enabled */
-	.sde_to_rst = 0x10,	/* 14 cycles, 200us (JEDEC default) */
-	.rst_to_cke = 0x23,	/* 33 cycles, 500us (JEDEC default) */
 #ifdef CONFIG_DDR3
+	.sde_to_rst = 0x10,	/* JEDEC value for LPDDR2 - 200us */
+	.rst_to_cke = 0x23,	/* 33 cycles, 500us (JEDEC default) */
 	.ddr_type = DDR_TYPE_DDR3,
 #else
+	.sde_to_rst = 0,	/* LPDDR2 does not need this field */
+	.rst_to_cke = 0x10,	/* JEDEC value for LPDDR2: 200us */
 	.ddr_type = DDR_TYPE_LPDDR2,
 #endif
 };

@@ -53,6 +53,38 @@ config MT42L256M32D2LG
 
 endchoice
 
+config DRAM_DRIVE_STRENGTH
+	int "DRAM Drive strength"
+	default 6
+	range 0 7
+	help
+		Enter drive strength as an index defined for IOMUX settings
+		for GRP_B1DS and others.
+		0 == Hi Z
+		6 == 40 Ohm (default)
+		7 == 34 Ohm
+		Value will be applied to all clock and data lines
+
+config RALAT
+	int "Read additional latency"
+	default 5
+	range 0 7
+	help
+		Enter a latency in number of cycles. This will be added to
+		CAS and internal delays for which the MMDC will retrieve the
+		read data from the internal FIFO.
+		This is used to compensate for board/chip delays.
+
+config WALAT
+	int "Write additional latency"
+	default 0
+	range 0 7
+	help
+		Enter a latency in number of cycles. This will be added to
+		CAS and internal delays for which the MMDC will retrieve the
+		read data from the internal FIFO
+		This is used to compensate for board/chip delays.
+
 choice
 	prompt "Serial console"
 
