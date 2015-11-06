@@ -245,12 +245,6 @@ static int mmdc_do_dqs_calibration
 	}
 
 	debug("no errors in write leveling\n");
-	printf( "MMDC_MPWLDECTRL0 ch0: 0x%08x\n", readl(&mmdc0->mpwldectrl0));
-	printf( "MMDC_MPWLDECTRL1 ch0: 0x%08x\n", readl(&mmdc0->mpwldectrl1));
-	if (sysinfo->dsize == 2) {
-		printf( "MMDC_MPWLDECTRL0 ch1: 0x%08x\n", readl(&mmdc1->mpwldectrl0));
-		printf( "MMDC_MPWLDECTRL1 ch1: 0x%08x\n", readl(&mmdc1->mpwldectrl1));
-	}
 	if (write_level_err(readl(&mmdc0->mpwldectrl0))
 	    ||
             write_level_err(readl(&mmdc0->mpwldectrl1))
@@ -925,6 +919,22 @@ void board_init_f(ulong dummy)
 			printf(".p1_mpwldectrl0\t= 0x%08X\n",calibration.p1_mpwldectrl0);
 			printf(".p1_mpwldectrl1\t= 0x%08X\n",calibration.p1_mpwldectrl1);
 		}
+#ifdef CONFIG_IMXIMAGE_OUTPUT
+		printf("DATA 4 MX6_MMDC_P0_MPDGCTRL0\t= 0x%08X\n", calibration.p0_mpdgctrl0);
+		printf("DATA 4 MX6_MMDC_P0_MPDGCTRL1\t= 0x%08X\n", calibration.p0_mpdgctrl1);
+		printf("DATA 4 MX6_MMDC_P0_MPRDDLCTL\t= 0x%08X\n", calibration.p0_mprddlctl);
+		printf("DATA 4 MX6_MMDC_P0_MPWRDLCTL\t= 0x%08X\n", calibration.p0_mpwrdlctl);
+		printf("DATA 4 MX6_MMDC_P0_MPWLDECTRL0\t= 0x%08X\n",calibration.p0_mpwldectrl0);
+		printf("DATA 4 MX6_MMDC_P0_MPWLDECTRL1\t= 0x%08X\n",calibration.p0_mpwldectrl1);
+		if (sysinfo.dsize == 2) {
+			printf("DATA 4 MX6_MMDC_P1_mpdgctrl0\t= 0x%08X\n", calibration.p1_mpdgctrl0);
+			printf("DATA 4 MX6_MMDC_P1_mpdgctrl1\t= 0x%08X\n", calibration.p1_mpdgctrl1);
+			printf("DATA 4 MX6_MMDC_P1_mprddlctl\t= 0x%08X\n", calibration.p1_mprddlctl);
+			printf("DATA 4 MX6_MMDC_P1_mpwrdlctl\t= 0x%08X\n", calibration.p1_mpwrdlctl);
+			printf("DATA 4 MX6_MMDC_P1_mpwldectrl0\t= 0x%08X\n",calibration.p1_mpwldectrl0);
+			printf("DATA 4 MX6_MMDC_P1_mpwldectrl1\t= 0x%08X\n",calibration.p1_mpwldectrl1);
+		}
+#endif
 	} else
 		printf("completed with %d errors\n", errs);
 

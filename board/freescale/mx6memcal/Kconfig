@@ -121,4 +121,11 @@ choice
 
 endchoice
 
+config IMXIMAGE_OUTPUT
+	bool "Include output for imximage"
+	default y
+	help
+		Say "Y" if you want output formatted for use
+		in non-SPL builds
+
 endif
