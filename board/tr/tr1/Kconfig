@@ -1,0 +1,12 @@
+if TARGET_TR1
+
+config SYS_BOARD
+	default "tr1"
+
+config SYS_VENDOR
+	default "tr"
+
+config SYS_CONFIG_NAME
+	default "tr1"
+
+endif

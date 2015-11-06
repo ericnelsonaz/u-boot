@@ -136,6 +136,9 @@ config TARGET_TITANIUM
 config TARGET_TQMA6
 	bool "TQ Systems TQMa6 board"
 
+config TARGET_TR1
+	bool "tr1"
+
 config TARGET_UDOO
 	bool "udoo"
 	select SUPPORT_SPL
@@ -173,6 +176,7 @@ source "board/seco/Kconfig"
 source "board/solidrun/mx6cuboxi/Kconfig"
 source "board/tbs/tbs2910/Kconfig"
 source "board/tqc/tqma6/Kconfig"
+source "board/tr/tr1/Kconfig"
 source "board/udoo/Kconfig"
 source "board/wandboard/Kconfig"
 source "board/warp/Kconfig"
