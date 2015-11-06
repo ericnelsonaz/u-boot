@@ -384,7 +384,7 @@ static int mmdc_do_dqs_calibration
 	 * mpdgctrl0[HW_DG_EN] should be 0
 	 */
 	debug("poll for completion\n");
-	while (readl(&mmdc0->mpdgctrl0) & 0x10000000)
+	while (readl(&mmdc0->mpdgctrl0) & (1 << 28))
 		;
 
 	/*
