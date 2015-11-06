@@ -488,6 +488,7 @@ void mx6_dram_cfg(const struct mx6_ddr_sysinfo *,
 #define MX6_MMDC_P0_MPDGCTRL1	0x021b0840
 #define MX6_MMDC_P0_MPRDDLCTL	0x021b0848
 #define MX6_MMDC_P0_MPWRDLCTL	0x021b0850
+#define MX6_MMDC_P0_MPZQLP2CTL	0x021b085C
 #define MX6_MMDC_P0_MPMUR0	0x021b08b8
 
 #define MX6_MMDC_P1_MDCTL	0x021b4000
