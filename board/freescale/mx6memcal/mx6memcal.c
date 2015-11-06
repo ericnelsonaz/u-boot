@@ -155,6 +155,16 @@ static u32 volatile *mx6dl_sdqs_pads[] = {
 	&mx6dl_ddrmux->dram_sdqs7,
 };
 
+/*
+ * maximum value of write leveling delay control registers
+ * is 0x2f.
+ */
+int write_level_err(u32 val){
+	return (0x2f < (val & 0x7f))
+		||
+		(0x2f < ((val >> 16) & 0x7f));
+}
+
 static int mmdc_do_dqs_calibration
 	(struct mx6_ddr_sysinfo const *sysinfo,
 	 struct mx6_mmdc_calibration *calib)
@@ -235,6 +245,23 @@ static int mmdc_do_dqs_calibration
 	}
 
 	debug("no errors in write leveling\n");
+	printf( "MMDC_MPWLDECTRL0 ch0: 0x%08x\n", readl(&mmdc0->mpwldectrl0));
+	printf( "MMDC_MPWLDECTRL1 ch0: 0x%08x\n", readl(&mmdc0->mpwldectrl1));
+	if (sysinfo->dsize == 2) {
+		printf( "MMDC_MPWLDECTRL0 ch1: 0x%08x\n", readl(&mmdc1->mpwldectrl0));
+		printf( "MMDC_MPWLDECTRL1 ch1: 0x%08x\n", readl(&mmdc1->mpwldectrl1));
+	}
+	if (write_level_err(readl(&mmdc0->mpwldectrl0))
+	    ||
+            write_level_err(readl(&mmdc0->mpwldectrl1))
+	    || ((sysinfo->dsize == 2)
+		&&
+		(write_level_err(readl(&mmdc0->mpwldectrl0))
+                 ||
+                 write_level_err(readl(&mmdc0->mpwldectrl1))))) {
+		printf("increase WALAT and retry\n");
+		return -1;
+	}
 
 	/*
 	 * User should issue MRS command to exit write leveling mode
