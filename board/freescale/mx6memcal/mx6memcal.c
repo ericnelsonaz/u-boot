@@ -196,10 +196,14 @@ static int mmdc_do_dqs_calibration
 	clrsetbits_le32(&mmdc0->mapsr, 0, 1);
 
 	/* set RALAT and WALAT to min */
-	clrsetbits_le32(&mmdc0->mdmisc, (7 << 6) | (3 << 16), 0);
+	clrsetbits_le32(&mmdc0->mdmisc,
+			(3 << 16) | (7 << 6),
+			(sysinfo->walat << 16) | (sysinfo->ralat << 6));
 
 	if(sysinfo->dsize == 2)
-		clrsetbits_le32(&mmdc1->mdmisc, (7 << 6) | (3 << 16), 0);
+		clrsetbits_le32(&mmdc1->mdmisc,
+				(3 << 16) | (7 << 6),
+				(sysinfo->walat << 16) | (sysinfo->ralat << 6));
 
 	/*
 	 * disable ZQ calibration
