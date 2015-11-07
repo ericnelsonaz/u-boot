@@ -195,9 +195,11 @@ static int mmdc_do_dqs_calibration
 	/* disable Adopt power down timer */
 	clrsetbits_le32(&mmdc0->mapsr, 0, 1);
 
-	/* set RALAT and WALAT to max */
-	clrsetbits_le32(&mmdc0->mdmisc, 0,
-			(7 << 6) | (3 << 16));
+	/* set RALAT and WALAT to min */
+	clrsetbits_le32(&mmdc0->mdmisc, (7 << 6) | (3 << 16), 0);
+
+	if(sysinfo->dsize == 2)
+		clrsetbits_le32(&mmdc1->mdmisc, (7 << 6) | (3 << 16), 0);
 
 	/*
 	 * disable ZQ calibration
