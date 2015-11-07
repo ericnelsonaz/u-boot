@@ -254,7 +254,12 @@ static int mmdc_do_dqs_calibration
                  ||
                  write_level_err(readl(&mmdc0->mpwldectrl1))))) {
 		printf("increase WALAT and retry\n");
-		return -1;
+		printf( "MMDC_MPWLDECTRL0 ch0: 0x%08x\n", readl(&mmdc0->mpwldectrl0));
+		printf( "MMDC_MPWLDECTRL1 ch0: 0x%08x\n", readl(&mmdc0->mpwldectrl1));
+		if (sysinfo->dsize == 2) {
+                        printf( "MMDC_MPWLDECTRL0 ch1: 0x%08x\n", readl(&mmdc1->mpwldectrl0));
+                        printf( "MMDC_MPWLDECTRL1 ch1: 0x%08x\n", readl(&mmdc1->mpwldectrl1));
+		}
 	}
 
 	/*
