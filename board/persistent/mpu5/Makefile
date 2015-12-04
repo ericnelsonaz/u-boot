@@ -6,5 +6,5 @@
 # SPDX-License-Identifier:	GPL-2.0+
 #
 
-obj-y  := per.o
+obj-y  := mpu5.o
 obj-$(CONFIG_SPL_BUILD) += spl.o
