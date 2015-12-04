@@ -1,18 +1,12 @@
-if TARGET_PER
-
-config SYS_CPU
-	default "armv7"
+if TARGET_MPU5
 
 config SYS_BOARD
-	default "per"
+	default "mpu5"
 
 config SYS_VENDOR
-	default "boundary"
-
-config SYS_SOC
-	default "mx6"
+	default "persistent"
 
 config SYS_CONFIG_NAME
-	default "per"
+	default "mpu5"
 
 endif
