@@ -1,8 +1,7 @@
 /*
  * Copyright (C) 2010-2011 Freescale Semiconductor, Inc.
  *
- * Configuration settings for the Boundary Devices Nitrogen6X
- * and Freescale i.MX6Q Sabre Lite boards.
+ * Configuration settings for the Boundary Devices rc
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -12,10 +11,38 @@
 
 #include "mx6_common.h"
 
-#define CONFIG_MACH_TYPE	3769
+#define CONFIG_MACH_TYPE	3778
 
 /* Size of malloc() pool */
-#define CONFIG_SYS_MALLOC_LEN		(10 * 1024 * 1024)
+#define CONFIG_SYS_MALLOC_LEN		(12 * 1024 * 1024)
+
+/* SPL magic */
+#ifdef CONFIG_SPL
+#define CONFIG_SPL_FRAMEWORK
+#define CONFIG_SPL_TEXT_BASE		0x00908400
+#define CONFIG_SPL_PAD_TO 0x400
+#define CONFIG_SPL_START_S_PATH		"arch/arm/cpu/armv7"
+#define CONFIG_SPL_STACK		0x0091FFB8
+
+#define CONFIG_SPL_LIBCOMMON_SUPPORT
+#define CONFIG_SPL_LIBGENERIC_SUPPORT
+#define CONFIG_SPL_SERIAL_SUPPORT
+#define CONFIG_SPL_USB
+#define CONFIG_SPL_WATCHDOG_SUPPORT
+#define CONFIG_SPL_GPIO_SUPPORT
+
+/* SPI flash. */
+#define CONFIG_SPL_SPI_SUPPORT
+#define CONFIG_SPL_SPI_FLASH_SUPPORT
+#define CONFIG_SPL_SPI_LOAD
+#define CONFIG_SPL_SPI_BUS		0
+#define CONFIG_SPL_SPI_CS		0
+#define CONFIG_SYS_SPI_U_BOOT_OFFS	0x20000
+
+#define CONFIG_SPL_BOARD_INIT
+#define CONFIG_SYS_SPL_MALLOC_START	0x00916000
+#define CONFIG_SYS_SPL_MALLOC_SIZE	0x2000
+#endif
 
 #define CONFIG_BOARD_EARLY_INIT_F
 #define CONFIG_MISC_INIT_R
@@ -25,6 +52,11 @@
 #define CONFIG_USB_ETHER
 #define CONFIG_USB_ETH_CDC
 #define CONFIG_NETCONSOLE
+
+#define CONFIG_CMD_FUSE
+#ifdef CONFIG_CMD_FUSE
+#define CONFIG_MXC_OCOTP
+#endif
 
 #define CONFIG_MXC_UART
 #define CONFIG_MXC_UART_BASE	       UART2_BASE
@@ -53,21 +85,6 @@
 #define CONFIG_SYS_FSL_ESDHC_ADDR      0
 #define CONFIG_SYS_FSL_USDHC_NUM       2
 #define CONFIG_EFI_PARTITION
-#ifdef CONFIG_MX6Q
-#define CONFIG_CMD_SATA
-#endif
-
-/*
- * SATA Configs
- */
-#ifdef CONFIG_CMD_SATA
-#define CONFIG_DWC_AHSATA
-#define CONFIG_SYS_SATA_MAX_DEVICE	1
-#define CONFIG_DWC_AHSATA_PORT_ID	0
-#define CONFIG_DWC_AHSATA_BASE_ADDR	SATA_ARB_BASE_ADDR
-#define CONFIG_LBA48
-#define CONFIG_LIBATA
-#endif
 
 #define CONFIG_CMD_PING
 #define CONFIG_CMD_DHCP
@@ -77,10 +94,9 @@
 #define IMX_FEC_BASE			ENET_BASE_ADDR
 #define CONFIG_FEC_XCV_TYPE		RGMII
 #define CONFIG_ETHPRIME			"FEC"
-#define CONFIG_FEC_MXC_PHYADDR		6
+#define CONFIG_FEC_MXC_PHYADDR		4
 #define CONFIG_PHYLIB
-#define CONFIG_PHY_MICREL
-#define CONFIG_PHY_MICREL_KSZ9021
+#define CONFIG_PHY_ATHEROS
 
 /* USB Configs */
 #define CONFIG_CMD_USB
@@ -88,9 +104,6 @@
 #define CONFIG_USB_EHCI_MX6
 #define CONFIG_USB_STORAGE
 #define CONFIG_USB_HOST_ETHER
-#define CONFIG_USB_ETHER_ASIX
-#define CONFIG_USB_ETHER_MCS7830
-#define CONFIG_USB_ETHER_SMSC95XX
 #define CONFIG_USB_MAX_CONTROLLER_COUNT 2
 #define CONFIG_EHCI_HCD_INIT_AFTER_RESET	/* For OTG port */
 #define CONFIG_MXC_USB_PORTSC	(PORT_PTS_UTMI | PORT_PTS_PTW)
@@ -111,8 +124,10 @@
 #define CONFIG_VIDEO_BMP_RLE8
 #define CONFIG_SPLASH_SCREEN
 #define CONFIG_SPLASH_SCREEN_ALIGN
+
 #define CONFIG_VIDEO_BMP_GZIP
 #define CONFIG_SYS_VIDEO_LOGO_MAX_SIZE (6 * 1024 * 1024)
+
 #define CONFIG_BMP_16BPP
 #define CONFIG_IPUV3_CLK 260000000
 #define CONFIG_CMD_HDMIDETECT
@@ -121,12 +136,6 @@
 #define CONFIG_IMX_VIDEO_SKIP
 
 #define CONFIG_PREBOOT                 ""
-
-#ifdef CONFIG_CMD_SATA
-#define CONFIG_DRIVE_SATA "sata "
-#else
-#define CONFIG_DRIVE_SATA
-#endif
 
 #ifdef CONFIG_CMD_MMC
 #define CONFIG_DRIVE_MMC "mmc "
@@ -140,89 +149,10 @@
 #define CONFIG_DRIVE_USB
 #endif
 
-#define CONFIG_DRIVE_TYPES CONFIG_DRIVE_SATA CONFIG_DRIVE_MMC CONFIG_DRIVE_USB
-#define CONFIG_UMSDEVS CONFIG_DRIVE_SATA CONFIG_DRIVE_MMC
+#define CONFIG_DRIVE_TYPES CONFIG_DRIVE_MMC CONFIG_DRIVE_USB
 
-#if defined(CONFIG_SABRELITE)
-#define CONFIG_EXTRA_ENV_SETTINGS \
-	"script=boot.scr\0" \
-	"uimage=uImage\0" \
-	"console=ttymxc1\0" \
-	"fdt_high=0xffffffff\0" \
-	"initrd_high=0xffffffff\0" \
-	"fdt_file=imx6q-sabrelite.dtb\0" \
-	"fdt_addr=0x18000000\0" \
-	"boot_fdt=try\0" \
-	"ip_dyn=yes\0" \
-	"mmcdevs=0 1\0" \
-	"mmcpart=1\0" \
-	"mmcroot=/dev/mmcblk0p2 rootwait rw\0" \
-	"mmcargs=setenv bootargs console=${console},${baudrate} " \
-		"root=${mmcroot}\0" \
-	"loadbootscript=" \
-		"load mmc ${mmcdev}:${mmcpart} ${loadaddr} ${script};\0" \
-	"bootscript=echo Running bootscript from mmc ...; " \
-		"source\0" \
-	"loaduimage=load mmc ${mmcdev}:${mmcpart} ${loadaddr} ${uimage}\0" \
-	"loadfdt=load mmc ${mmcdev}:${mmcpart} ${fdt_addr} ${fdt_file}\0" \
-	"mmcboot=echo Booting from mmc ...; " \
-		"run mmcargs; " \
-		"if test ${boot_fdt} = yes || test ${boot_fdt} = try; then " \
-			"if run loadfdt; then " \
-				"bootm ${loadaddr} - ${fdt_addr}; " \
-			"else " \
-				"if test ${boot_fdt} = try; then " \
-					"bootm; " \
-				"else " \
-					"echo WARN: Cannot load the DT; " \
-				"fi; " \
-			"fi; " \
-		"else " \
-			"bootm; " \
-		"fi;\0" \
-	"netargs=setenv bootargs console=${console},${baudrate} " \
-		"root=/dev/nfs " \
-	"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0" \
-		"netboot=echo Booting from net ...; " \
-		"run netargs; " \
-		"if test ${ip_dyn} = yes; then " \
-			"setenv get_cmd dhcp; " \
-		"else " \
-			"setenv get_cmd tftp; " \
-		"fi; " \
-		"${get_cmd} ${uimage}; " \
-		"if test ${boot_fdt} = yes || test ${boot_fdt} = try; then " \
-			"if ${get_cmd} ${fdt_addr} ${fdt_file}; then " \
-				"bootm ${loadaddr} - ${fdt_addr}; " \
-			"else " \
-				"if test ${boot_fdt} = try; then " \
-					"bootm; " \
-				"else " \
-					"echo WARN: Cannot load the DT; " \
-				"fi; " \
-			"fi; " \
-		"else " \
-			"bootm; " \
-		"fi;\0"
-
-#define CONFIG_BOOTCOMMAND \
-	"for mmcdev in ${mmcdevs}; do " \
-		"mmc dev ${mmcdev}; " \
-		"if mmc rescan; then " \
-			"if run loadbootscript; then " \
-				"run bootscript; " \
-			"else " \
-				"if run loaduimage; then " \
-					"run mmcboot; " \
-				"fi; " \
-			"fi; " \
-		"fi; " \
-	"done; " \
-	"run netboot; "
-#else
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"bootdevs=" CONFIG_DRIVE_TYPES "\0" \
-	"umsdevs=" CONFIG_UMSDEVS "\0" \
 	"console=ttymxc1\0" \
 	"clearenv=if sf probe || sf probe || sf probe 1 ; then " \
 		"sf erase 0xc0000 0x2000 && " \
@@ -244,27 +174,20 @@
 		"echo ; echo 6x_bootscript not found ; " \
 		"echo ; echo serial console at 115200, 8N1 ; echo ; " \
 		"echo details at http://boundarydevices.com/6q_bootscript ; " \
-		"setenv stdout serial;" \
-		"setenv stdin serial,usbkbd;" \
-		"for dtype in ${umsdevs} ; do " \
-			"if itest.s sata == ${dtype}; then " \
-				"initcmd='sata init' ;" \
-			"else " \
-				"initcmd='mmc rescan' ;" \
-			"fi; " \
-			"for disk in 0 1 ; do " \
-				"if $initcmd && $dtype dev $disk ; then " \
-					"setenv stdout serial,vga; " \
-					"echo expose ${dtype} ${disk} " \
-						"over USB; " \
-					"ums 0 $dtype $disk ;" \
-				"fi; " \
-		"	done; " \
-		"done ;" \
-		"setenv stdout serial,vga; " \
-		"echo no block devices found;" \
+		"setenv stdout serial; " \
+		"for disk in 1 0 ; do " \
+			"if mmc dev ${disk} ; then " \
+				"setenv stdout serial,vga; " \
+				"echo expose MMC ${disk} over USB; " \
+				"ums 0 mmc ${disk}; " \
+			"fi ;" \
+		"done; " \
 		"\0" \
+	"fdt_addr=0x13000000\0" \
+	"fdt_high=0xffffffff\0" \
 	"initrd_high=0xffffffff\0" \
+	"loadsplash=if sf probe ; then sf read ${splashimage} c2000 ${splashsize} ; fi\0" \
+	"uboot_defconfig=" CONFIG_DEFCONFIG "\0" \
 	"upgradeu=for dtype in ${bootdevs}" \
 		"; do " \
 		"for disk in 0 1 ; do ${dtype} dev ${disk} ;" \
@@ -273,8 +196,17 @@
 				"&& source 10008000 ; " \
 		"done ; " \
 	"done\0" \
+	"usbnet_devaddr=00:19:b8:00:00:02\0" \
+	"usbnet_hostaddr=00:19:b8:00:00:01\0" \
+	"usbrecover=setenv ethact usb_ether; " \
+		"setenv ipaddr 10.0.0.2; " \
+		"setenv netmask 255.255.255.0; " \
+		"setenv serverip 10.0.0.1; " \
+		"setenv bootargs console=ttymxc1,115200; " \
+		"tftpboot 10800000 10.0.0.1:uImage-${board}-recovery" \
+		"&& tftpboot 12800000 10.0.0.1:uramdisk-${board}-recovery.img " \
+		"&& bootm 10800000 12800000\0" \
 
-#endif
 /* Miscellaneous configurable options */
 #define CONFIG_SYS_MEMTEST_START       0x10000000
 #define CONFIG_SYS_MEMTEST_END	       0x10010000
@@ -296,11 +228,7 @@
 /* Environment organization */
 #define CONFIG_ENV_SIZE			(8 * 1024)
 
-#if defined(CONFIG_SABRELITE)
-#define CONFIG_ENV_IS_IN_MMC
-#else
 #define CONFIG_ENV_IS_IN_SPI_FLASH
-#endif
 
 #if defined(CONFIG_ENV_IS_IN_MMC)
 #define CONFIG_ENV_OFFSET		(6 * 64 * 1024)
@@ -319,10 +247,12 @@
 #define CONFIG_CMD_TIME
 #define CONFIG_CMD_MEMTEST
 #define CONFIG_SYS_ALT_MEMTEST
+#define CONFIG_BOARD_LATE_INIT
 
 /*
  * PCI express
  */
+/* #define CONFIG_CMD_PCI */
 #ifdef CONFIG_CMD_PCI
 #define CONFIG_PCI
 #define CONFIG_PCI_PNP
@@ -330,6 +260,7 @@
 #define CONFIG_PCIE_IMX
 #endif
 
+#define CONFIG_CMD_UNZIP
 
 #define CONFIG_USB_GADGET
 #define CONFIG_CMD_USB_MASS_STORAGE
