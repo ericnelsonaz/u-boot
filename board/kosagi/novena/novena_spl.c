@@ -603,8 +603,8 @@ void board_init_f(ulong dummy)
 
 	/* Perform DDR DRAM calibration */
 	udelay(100);
-	mmdc_do_write_level_calibration();
-	mmdc_do_dqs_calibration();
+	mmdc_do_write_level_calibration(&novena_mmdc_calib);
+	mmdc_do_dqs_calibration(&novena_mmdc_calib);
 
 	/* Clear the BSS. */
 	memset(__bss_start, 0, __bss_end - __bss_start);
