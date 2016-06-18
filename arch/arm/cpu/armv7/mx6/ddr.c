@@ -86,7 +86,7 @@ static void modify_dg_result(u32 *reg_st0, u32 *reg_st1, u32 *reg_ctrl)
 	writel(val_ctrl, reg_ctrl);
 }
 
-int mmdc_do_write_level_calibration(void)
+int mmdc_do_write_level_calibration(struct mx6_mmdc_calibration *calib)
 {
 	struct mmdc_p_regs *mmdc0 = (struct mmdc_p_regs *)MMDC_P0_BASE_ADDR;
 	struct mmdc_p_regs *mmdc1 = (struct mmdc_p_regs *)MMDC_P1_BASE_ADDR;
@@ -195,10 +195,17 @@ int mmdc_do_write_level_calibration(void)
 	      readl(&mmdc1->mpwldectrl1));
 
 	/* We must force a readback of these values, to get them to stick */
-	readl(&mmdc0->mpwldectrl0);
-	readl(&mmdc0->mpwldectrl1);
-	readl(&mmdc1->mpwldectrl0);
-	readl(&mmdc1->mpwldectrl1);
+	if (calib) {
+		calib->p0_mpwldectrl0 = readl(&mmdc0->mpwldectrl0);
+		calib->p0_mpwldectrl1 = readl(&mmdc0->mpwldectrl1);
+		calib->p1_mpwldectrl0 = readl(&mmdc1->mpwldectrl0);
+		calib->p1_mpwldectrl1 = readl(&mmdc1->mpwldectrl1);
+	} else {
+		readl(&mmdc0->mpwldectrl0);
+		readl(&mmdc0->mpwldectrl1);
+		readl(&mmdc1->mpwldectrl0);
+		readl(&mmdc1->mpwldectrl1);
+	}
 
 	/* enable DDR logic power down timer: */
 	setbits_le32(&mmdc0->mdpdc, 0x00005500);
@@ -212,7 +219,7 @@ int mmdc_do_write_level_calibration(void)
 	return errors;
 }
 
-int mmdc_do_dqs_calibration(void)
+int mmdc_do_dqs_calibration(struct mx6_mmdc_calibration *calib)
 {
 	struct mmdc_p_regs *mmdc0 = (struct mmdc_p_regs *)MMDC_P0_BASE_ADDR;
 	struct mmdc_p_regs *mmdc1 = (struct mmdc_p_regs *)MMDC_P1_BASE_ADDR;
@@ -548,6 +555,16 @@ int mmdc_do_dqs_calibration(void)
 
 	debug("Final do_dqs_calibration error mask: 0x%x\n", errors);
 
+	if (calib) {
+		calib->p0_mpdgctrl0 = readl(&mmdc0->mpdgctrl0);
+		calib->p0_mpdgctrl1 = readl(&mmdc0->mpdgctrl1);
+		calib->p1_mpdgctrl0 = readl(&mmdc1->mpdgctrl0);
+		calib->p1_mpdgctrl1 = readl(&mmdc1->mpdgctrl1);
+		calib->p0_mprddlctl = readl(&mmdc0->mprddlctl);
+		calib->p1_mprddlctl = readl(&mmdc1->mprddlctl);
+		calib->p0_mpwrdlctl = readl(&mmdc0->mpwrdlctl);
+		calib->p1_mpwrdlctl = readl(&mmdc1->mpwrdlctl);
+	}
 	return errors;
 }
 #endif
