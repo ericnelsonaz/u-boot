@@ -1074,13 +1074,15 @@ void mx6_lpddr2_cfg(const struct mx6_ddr_sysinfo *sysinfo,
 	 * board-specific configuration:
 	 *  These values are determined empirically and vary per board layout
 	 */
-	mmdc0->mpwldectrl0 = calib->p0_mpwldectrl0;
-	mmdc0->mpwldectrl1 = calib->p0_mpwldectrl1;
-	mmdc0->mpdgctrl0 = calib->p0_mpdgctrl0;
-	mmdc0->mpdgctrl1 = calib->p0_mpdgctrl1;
-	mmdc0->mprddlctl = calib->p0_mprddlctl;
-	mmdc0->mpwrdlctl = calib->p0_mpwrdlctl;
-	mmdc0->mpzqlp2ctl = calib->mpzqlp2ctl;
+	if (calib) {
+		mmdc0->mpwldectrl0 = calib->p0_mpwldectrl0;
+		mmdc0->mpwldectrl1 = calib->p0_mpwldectrl1;
+		mmdc0->mpdgctrl0 = calib->p0_mpdgctrl0;
+		mmdc0->mpdgctrl1 = calib->p0_mpdgctrl1;
+		mmdc0->mprddlctl = calib->p0_mprddlctl;
+		mmdc0->mpwrdlctl = calib->p0_mpwrdlctl;
+		mmdc0->mpzqlp2ctl = calib->mpzqlp2ctl;
+	}
 
 	/* Read data DQ Byte0-3 delay */
 	mmdc0->mprddqby0dl = 0x33333333;
@@ -1360,19 +1362,21 @@ void mx6_ddr3_cfg(const struct mx6_ddr_sysinfo *sysinfo,
 	 *  see:
 	 *   appnote, ddr3 spreadsheet
 	 */
-	mmdc0->mpwldectrl0 = calib->p0_mpwldectrl0;
-	mmdc0->mpwldectrl1 = calib->p0_mpwldectrl1;
-	mmdc0->mpdgctrl0 = calib->p0_mpdgctrl0;
-	mmdc0->mpdgctrl1 = calib->p0_mpdgctrl1;
-	mmdc0->mprddlctl = calib->p0_mprddlctl;
-	mmdc0->mpwrdlctl = calib->p0_mpwrdlctl;
-	if (sysinfo->dsize > 1) {
-		MMDC1(mpwldectrl0, calib->p1_mpwldectrl0);
-		MMDC1(mpwldectrl1, calib->p1_mpwldectrl1);
-		MMDC1(mpdgctrl0, calib->p1_mpdgctrl0);
-		MMDC1(mpdgctrl1, calib->p1_mpdgctrl1);
-		MMDC1(mprddlctl, calib->p1_mprddlctl);
-		MMDC1(mpwrdlctl, calib->p1_mpwrdlctl);
+	if (calib) {
+		mmdc0->mpwldectrl0 = calib->p0_mpwldectrl0;
+		mmdc0->mpwldectrl1 = calib->p0_mpwldectrl1;
+		mmdc0->mpdgctrl0 = calib->p0_mpdgctrl0;
+		mmdc0->mpdgctrl1 = calib->p0_mpdgctrl1;
+		mmdc0->mprddlctl = calib->p0_mprddlctl;
+		mmdc0->mpwrdlctl = calib->p0_mpwrdlctl;
+		if (sysinfo->dsize > 1) {
+			MMDC1(mpwldectrl0, calib->p1_mpwldectrl0);
+			MMDC1(mpwldectrl1, calib->p1_mpwldectrl1);
+			MMDC1(mpdgctrl0, calib->p1_mpdgctrl0);
+			MMDC1(mpdgctrl1, calib->p1_mpdgctrl1);
+			MMDC1(mprddlctl, calib->p1_mprddlctl);
+			MMDC1(mpwrdlctl, calib->p1_mpwrdlctl);
+		}
 	}
 
 	/* Read data DQ Byte0-3 delay */
