@@ -908,6 +908,7 @@ void board_init_f(ulong dummy)
 {
 	int errs;
 	struct mx6_mmdc_calibration calibration;
+	u32 cpurev = get_cpu_rev();
 
 	memset((void *)gd, 0, sizeof(struct global_data));
 
@@ -933,6 +934,11 @@ void board_init_f(ulong dummy)
 			reset_cpu(0);
 		}
 	}
+	printf("CPU:   Freescale i.MX%s rev%d.%d at %d MHz\n",
+		get_imx_type((cpurev & 0xFF000) >> 12),
+		(cpurev & 0x000F0) >> 4,
+		(cpurev & 0x0000F) >> 0,
+		mxc_get_clock(MXC_ARM_CLK) / 1000000);
 #ifdef CONFIG_MX6SL
 	mx6sl_dram_iocfg(CONFIG_DDRWIDTH, &mx6sl_ddr_ioregs,
 			 &mx6sl_grp_ioregs);
