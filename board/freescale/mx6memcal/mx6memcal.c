@@ -165,7 +165,7 @@ int write_level_err(u32 val){
 		(0x2f < ((val >> 16) & 0x7f));
 }
 
-static int mmdc_do_dqs_calibration
+static int xmmdc_do_dqs_calibration
 	(struct mx6_ddr_sysinfo const *sysinfo,
 	 struct mx6_mmdc_calibration *calib)
 {
@@ -865,6 +865,40 @@ static void ccgr_init(void)
 	writel(0x000003FF, &ccm->CCGR6);
 }
 
+static void display_calibration(struct mx6_mmdc_calibration *calib)
+{
+	printf(".p0_mpdgctrl0\t= 0x%08X\n", calib->p0_mpdgctrl0);
+	printf(".p0_mpdgctrl1\t= 0x%08X\n", calib->p0_mpdgctrl1);
+	printf(".p0_mprddlctl\t= 0x%08X\n", calib->p0_mprddlctl);
+	printf(".p0_mpwrdlctl\t= 0x%08X\n", calib->p0_mpwrdlctl);
+	printf(".p0_mpwldectrl0\t= 0x%08X\n",calib->p0_mpwldectrl0);
+	printf(".p0_mpwldectrl1\t= 0x%08X\n",calib->p0_mpwldectrl1);
+	if (sysinfo.dsize == 2) {
+		printf(".p1_mpdgctrl0\t= 0x%08X\n", calib->p1_mpdgctrl0);
+		printf(".p1_mpdgctrl1\t= 0x%08X\n", calib->p1_mpdgctrl1);
+		printf(".p1_mprddlctl\t= 0x%08X\n", calib->p1_mprddlctl);
+		printf(".p1_mpwrdlctl\t= 0x%08X\n", calib->p1_mpwrdlctl);
+		printf(".p1_mpwldectrl0\t= 0x%08X\n",calib->p1_mpwldectrl0);
+		printf(".p1_mpwldectrl1\t= 0x%08X\n",calib->p1_mpwldectrl1);
+	}
+#ifdef CONFIG_IMXIMAGE_OUTPUT
+	printf("DATA 4 MX6_MMDC_P0_MPDGCTRL0\t= 0x%08X\n", calib->p0_mpdgctrl0);
+	printf("DATA 4 MX6_MMDC_P0_MPDGCTRL1\t= 0x%08X\n", calib->p0_mpdgctrl1);
+	printf("DATA 4 MX6_MMDC_P0_MPRDDLCTL\t= 0x%08X\n", calib->p0_mprddlctl);
+	printf("DATA 4 MX6_MMDC_P0_MPWRDLCTL\t= 0x%08X\n", calib->p0_mpwrdlctl);
+	printf("DATA 4 MX6_MMDC_P0_MPWLDECTRL0\t= 0x%08X\n",calib->p0_mpwldectrl0);
+	printf("DATA 4 MX6_MMDC_P0_MPWLDECTRL1\t= 0x%08X\n",calib->p0_mpwldectrl1);
+	if (sysinfo.dsize == 2) {
+		printf("DATA 4 MX6_MMDC_P1_mpdgctrl0\t= 0x%08X\n", calib->p1_mpdgctrl0);
+		printf("DATA 4 MX6_MMDC_P1_mpdgctrl1\t= 0x%08X\n", calib->p1_mpdgctrl1);
+		printf("DATA 4 MX6_MMDC_P1_mprddlctl\t= 0x%08X\n", calib->p1_mprddlctl);
+		printf("DATA 4 MX6_MMDC_P1_mpwrdlctl\t= 0x%08X\n", calib->p1_mpwrdlctl);
+		printf("DATA 4 MX6_MMDC_P1_mpwldectrl0\t= 0x%08X\n",calib->p1_mpwldectrl0);
+		printf("DATA 4 MX6_MMDC_P1_mpwldectrl1\t= 0x%08X\n",calib->p1_mpwldectrl1);
+	}
+#endif
+}
+
 /*
  * called from C runtime startup code (arch/arm/lib/crt0.S:_main)
  * - we have a stack and a place to store GD, both in SRAM
@@ -913,41 +947,28 @@ void board_init_f(ulong dummy)
 	}
 #endif
 	mx6_dram_cfg(&sysinfo, NULL, &ddrtype);
-	errs = mmdc_do_dqs_calibration(&sysinfo, &calibration);
+
+	printf("calling nelson's calibration routine\n");
+	errs = xmmdc_do_dqs_calibration(&sysinfo, &calibration);
 	if (!errs) {
 		printf("completed successfully\n");
-		printf(".p0_mpdgctrl0\t= 0x%08X\n", calibration.p0_mpdgctrl0);
-		printf(".p0_mpdgctrl1\t= 0x%08X\n", calibration.p0_mpdgctrl1);
-		printf(".p0_mprddlctl\t= 0x%08X\n", calibration.p0_mprddlctl);
-		printf(".p0_mpwrdlctl\t= 0x%08X\n", calibration.p0_mpwrdlctl);
-		printf(".p0_mpwldectrl0\t= 0x%08X\n",calibration.p0_mpwldectrl0);
-		printf(".p0_mpwldectrl1\t= 0x%08X\n",calibration.p0_mpwldectrl1);
-		if (sysinfo.dsize == 2) {
-			printf(".p1_mpdgctrl0\t= 0x%08X\n", calibration.p1_mpdgctrl0);
-			printf(".p1_mpdgctrl1\t= 0x%08X\n", calibration.p1_mpdgctrl1);
-			printf(".p1_mprddlctl\t= 0x%08X\n", calibration.p1_mprddlctl);
-			printf(".p1_mpwrdlctl\t= 0x%08X\n", calibration.p1_mpwrdlctl);
-			printf(".p1_mpwldectrl0\t= 0x%08X\n",calibration.p1_mpwldectrl0);
-			printf(".p1_mpwldectrl1\t= 0x%08X\n",calibration.p1_mpwldectrl1);
-		}
-#ifdef CONFIG_IMXIMAGE_OUTPUT
-		printf("DATA 4 MX6_MMDC_P0_MPDGCTRL0\t= 0x%08X\n", calibration.p0_mpdgctrl0);
-		printf("DATA 4 MX6_MMDC_P0_MPDGCTRL1\t= 0x%08X\n", calibration.p0_mpdgctrl1);
-		printf("DATA 4 MX6_MMDC_P0_MPRDDLCTL\t= 0x%08X\n", calibration.p0_mprddlctl);
-		printf("DATA 4 MX6_MMDC_P0_MPWRDLCTL\t= 0x%08X\n", calibration.p0_mpwrdlctl);
-		printf("DATA 4 MX6_MMDC_P0_MPWLDECTRL0\t= 0x%08X\n",calibration.p0_mpwldectrl0);
-		printf("DATA 4 MX6_MMDC_P0_MPWLDECTRL1\t= 0x%08X\n",calibration.p0_mpwldectrl1);
-		if (sysinfo.dsize == 2) {
-			printf("DATA 4 MX6_MMDC_P1_mpdgctrl0\t= 0x%08X\n", calibration.p1_mpdgctrl0);
-			printf("DATA 4 MX6_MMDC_P1_mpdgctrl1\t= 0x%08X\n", calibration.p1_mpdgctrl1);
-			printf("DATA 4 MX6_MMDC_P1_mprddlctl\t= 0x%08X\n", calibration.p1_mprddlctl);
-			printf("DATA 4 MX6_MMDC_P1_mpwrdlctl\t= 0x%08X\n", calibration.p1_mpwrdlctl);
-			printf("DATA 4 MX6_MMDC_P1_mpwldectrl0\t= 0x%08X\n",calibration.p1_mpwldectrl0);
-			printf("DATA 4 MX6_MMDC_P1_mpwldectrl1\t= 0x%08X\n",calibration.p1_mpwldectrl1);
-		}
-#endif
+		display_calibration(&calibration);
 	} else
 		printf("completed with %d errors\n", errs);
+
+	printf("calling mainline calibration routine\n");
+	errs = mmdc_do_write_level_calibration(&calibration);
+	if (errs) {
+		printf("error %d from write level calibration\n", errs);
+	} else {
+		errs = mmdc_do_dqs_calibration(&calibration);
+		if (errs) {
+			printf("error %d from write level calibration\n", errs);
+		} else {
+			printf("completed successfully\n");
+			display_calibration(&calibration);
+		}
+	}
 
 	reset_cpu(0);
 }
