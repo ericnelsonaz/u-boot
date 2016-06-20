@@ -5,9 +5,7 @@
  * SPDX-License-Identifier:     GPL-2.0+
  */
 
-/* #define DEBUG */
 #include <common.h>
-#include <i2c.h>
 #include <asm/io.h>
 #include <asm/arch/iomux.h>
 #include <asm/arch/clock.h>
@@ -15,7 +13,6 @@
 #include <asm/arch/mx6-ddr.h>
 #include <asm/arch/mx6-pins.h>
 #include <asm/arch/sys_proto.h>
-#include <asm/imx-common/iomux-v3.h>
 #include <spl.h>
 
 DECLARE_GLOBAL_DATA_PTR;
