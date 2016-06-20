@@ -15,9 +15,7 @@
 #include <asm/arch/mx6-ddr.h>
 #include <asm/arch/mx6-pins.h>
 #include <asm/arch/sys_proto.h>
-#include <asm/imx-common/boot_mode.h>
 #include <asm/imx-common/iomux-v3.h>
-#include <asm/imx-common/mxc_i2c.h>
 #include <spl.h>
 
 DECLARE_GLOBAL_DATA_PTR;
