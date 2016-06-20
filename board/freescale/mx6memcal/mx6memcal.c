@@ -963,11 +963,11 @@ void board_init_f(ulong dummy)
 		printf("completed with %d errors\n", errs);
 
 	printf("calling mainline calibration routine\n");
-	errs = mmdc_do_write_level_calibration(&calibration);
+	errs = mmdc_do_write_level_calibration(&sysinfo, &calibration);
 	if (errs) {
 		printf("error %d from write level calibration\n", errs);
 	} else {
-		errs = mmdc_do_dqs_calibration(&calibration);
+		errs = mmdc_do_dqs_calibration(&sysinfo, &calibration);
 		if (errs) {
 			printf("error %d from write level calibration\n", errs);
 		} else {
