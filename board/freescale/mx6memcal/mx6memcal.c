@@ -9,24 +9,10 @@
 
 #include <common.h>
 #include <asm/arch/sys_proto.h>
-#include <malloc.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
-int board_early_init_f(void)
-{
-	return 0;
-}
-
 int board_init(void)
-{
-	/* address of boot parameters */
-	gd->bd->bi_boot_params = PHYS_SDRAM + 0x100;
-
-	return 0;
-}
-
-int board_late_init(void)
 {
 	return 0;
 }
@@ -43,7 +29,3 @@ int dram_init(void)
 	return 0;
 }
 
-int misc_init_r(void)
-{
-	return 0;
-}
