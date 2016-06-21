@@ -10,17 +10,22 @@
 #ifndef __CONFIG_H
 #define __CONFIG_H
 
-#include "mx6_common.h"
-
 /* SPL */
 #define CONFIG_SPL_WATCHDOG_SUPPORT
 
-#include "imx6_spl.h"                  /* common IMX6 SPL configuration */
+#include "mx6_common.h"
+#include "imx6_spl.h"
 
-#define CONFIG_SYS_DCACHE_OFF
+#undef CONFIG_CMD_BOOTM
+#undef CONFIG_FSL_ESDHC
+#undef CONFIG_MMC
+#undef CONFIG_SPL_MMC_SUPPORT
+#undef CONFIG_GENERIC_MMC
+#undef CONFIG_CMD_FUSE
 
-#include <asm/arch/imx-regs.h>
-#include <asm/imx-common/gpio.h>
+#define CONFIG_SYS_MEMTEST_START	0x10000000
+#define CONFIG_SYS_MEMTEST_END		0x20000000
+#define CONFIG_SYS_MALLOC_LEN		(64 * 1024 * 1024)
 
 #define CONFIG_MXC_UART
 #ifdef CONFIG_SERIAL_CONSOLE_UART1
@@ -56,7 +61,5 @@
 
 #define CONFIG_ENV_SIZE			(8 * 1024)
 #define CONFIG_ENV_IS_NOWHERE
-
-#undef CONFIG_CMD_IMLS
 
 #endif	       /* __CONFIG_H */
