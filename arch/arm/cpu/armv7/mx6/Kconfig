@@ -92,6 +92,14 @@ config TARGET_MX6CUBOXI
 config TARGET_MX6QARM2
 	bool "mx6qarm2"
 
+config TARGET_MX6MEMCAL
+	bool "mx6memcal"
+	select SUPPORT_SPL
+	help
+	  The mx6memcal board is a virtual board that can be used to validate
+	  and characterize the memory layout of a new design during the initial
+	  development and pre-production stages.
+
 config TARGET_MX6QSABREAUTO
 	bool "mx6qsabreauto"
 	select DM
@@ -199,6 +207,7 @@ source "board/compulab/cm_fx6/Kconfig"
 source "board/congatec/cgtqmx6eval/Kconfig"
 source "board/embest/mx6boards/Kconfig"
 source "board/freescale/mx6qarm2/Kconfig"
+source "board/freescale/mx6memcal/Kconfig"
 source "board/freescale/mx6qsabreauto/Kconfig"
 source "board/freescale/mx6sabresd/Kconfig"
 source "board/freescale/mx6slevk/Kconfig"
