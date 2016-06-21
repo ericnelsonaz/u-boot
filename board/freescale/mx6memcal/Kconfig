@@ -32,27 +32,27 @@ choice
 	prompt "Memory type"
 
 config MT41K512M16TNA
-	bool "Micron MT41K512M16TNA"
+	bool "Micron MT41K512M16TNA 512Mx16 (1GiB/chip)"
 	depends on DDR3
 
 config MT41K128M16JT
-	bool "Micron MT41K128M16JT"
+	bool "Micron MT41K128M16JT 128Mx16 (256 MiB/chip)"
 	depends on DDR3
 
 config H5TQ4G63AFR
-	bool "Hynix H5TQ4G63AFR"
+	bool "Hynix H5TQ4G63AFR 512Mx16 (1GiB/chip)"
 	depends on DDR3
 
 config H5TQ2G63DFR
-	bool "Hynix H5TQ2G63DFR"
+	bool "Hynix H5TQ2G63DFR 128Mx16 (256 MiB/chip)"
 	depends on DDR3
 
 config MT42L256M32D2LG
-	bool "Micron 256Mx32 1GiB LPDDR2"
+	bool "Micron MT42L256M32D2LG LPDDR2 256Mx32 (1GiB/chip)"
 	depends on LPDDR2
 
 config MT29PZZZ4D4BKESK
-	bool "Micron multi-chip 512MiB LPDDR2/4GiB eMMC"
+	bool "Micron MT29PZZZ4D4BKESK multi-chip 512MiB LPDDR2/4GiB eMMC"
 	depends on LPDDR2
 
 endchoice
