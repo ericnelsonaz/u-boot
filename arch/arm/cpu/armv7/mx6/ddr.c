@@ -1536,3 +1536,7 @@ void mx6_dram_cfg(const struct mx6_ddr_sysinfo *sysinfo,
 		hang();
 	}
 }
+
+#ifdef CONFIG_SPL_BUILD
+struct plugin_state plugin_state __attribute__((section(".data")));
+#endif
