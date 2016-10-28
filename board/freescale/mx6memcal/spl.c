@@ -400,6 +400,10 @@ void board_init_f(ulong dummy)
 
 	memset((void *)gd, 0, sizeof(struct global_data));
 
+	/* write leveling calibration defaults */
+	calibration.p0_mpwrdlctl = 0x40404040;
+	calibration.p1_mpwrdlctl = 0x40404040;
+
 	/* setup AIPS and disable watchdog */
 	arch_cpu_init();
 
