@@ -215,7 +215,15 @@ int board_init(void)
 int board_early_init_f(void)
 {
 	imx8ulp_iomux_setup_multiple_pads(init_pads, ARRAY_SIZE(init_pads));
+
 	gpio_request(GP_LCD_RESET, "lcd_rst");
 	gpio_direction_output(GP_LCD_RESET, 0);
+
+	/* enable GPIOC on the A35 */
+	setbits_le32(SIM_SEC_BASE_ADDR + 0x44, BIT(26));
+
+	/* enable GPIOC clock */
+	setbits_le32(PCC1_RBASE + 0xBC, BIT(30));
+
 	return 0;
 }
