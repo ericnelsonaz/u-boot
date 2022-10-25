@@ -219,10 +219,12 @@ int board_early_init_f(void)
 	gpio_request(GP_LCD_RESET, "lcd_rst");
 	gpio_direction_output(GP_LCD_RESET, 0);
 
-	/* enable GPIOC on the A35 */
-	setbits_le32(SIM_SEC_BASE_ADDR + 0x44, BIT(26));
+	/* enable GPIOA/B/C on the A35 */
+	setbits_le32(SIM_SEC_BASE_ADDR + 0x44, BIT(24)|BIT(25)|BIT(26));
 
-	/* enable GPIOC clock */
+	/* enable GPIOA/B/C clocks */
+	setbits_le32(PCC1_RBASE + 0xB4, BIT(30));
+	setbits_le32(PCC1_RBASE + 0xB8, BIT(30));
 	setbits_le32(PCC1_RBASE + 0xBC, BIT(30));
 
 	return 0;
